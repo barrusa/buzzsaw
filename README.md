@@ -1,8 +1,6 @@
 # 🐝 Buzzsaw
 
-**Buzzsaw** is a professional-grade, Jeopardy-style trivia buzzer system built for macOS. It interfaces with physical USB buzzers to manage player lockouts, timing, and sound effects, providing a TV-show quality experience for your game nights.
-
-![Buzzsaw Board View](https://via.placeholder.com/800x450.png?text=Buzzsaw+Game+Board)
+**Buzzsaw** is a professional-grade, Jeopardy! style trivia buzzer system built for macOS. It interfaces with physical USB buzzers to manage player lockouts, timing, and sound effects, providing a TV-show quality experience for your game nights.
 
 ## 🚀 Features
 
@@ -12,8 +10,8 @@
 *   **Hardware Integration:** Native support for **Delcom USB HID** buzzers.
 *   **Precision Lockout:** 
     *   Millisecond-accurate input detection using polling (~250Hz).
-    *   **Penalty System:** Players who buzz *before* the floor opens are locked out for 0.25s.
-*   **Jeopardy Style:** 
+    *   **Penalty System:** Players who buzz *before* the floor opens are locked out for 250ms.
+*   **Jeopardy! Style:** 
     *   Authentic fonts (Oswald/Helvetica style).
     *   Standard 5-second countdown timer.
     *   🥇, 🥈, 🥉 medal tracking for every round.
