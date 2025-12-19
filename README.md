@@ -72,6 +72,6 @@ The output will be in `out/Buzzsaw-darwin-arm64/`. Note that you may need to rig
 
 Designed for **Delcom USB HID Switches** (Vendor ID: `0x0fc5`, Product ID: `0xb080`), but the polling logic in `src/main.ts` can be adapted for other HID devices.
 
-## 📄 License
+## 👩‍⚖️ Disclaimer
 
-MIT
+The Jeopardy! game show and all elements thereof, including but not limited to copyright and trademark thereto, are the property of Jeopardy Productions, Inc. and are protected under law. This app is not affiliated with, sponsored by, or operated by Jeopardy Productions, Inc. 
