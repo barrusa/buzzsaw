@@ -301,7 +301,9 @@ ipcMain.on('request-state', () => {
   broadcastState();
 });
 
-ipcMain.on('start-timer', () => {});
+ipcMain.on('start-timer', () => {
+  // Placeholder for future timer start logic if needed
+});
 
 ipcMain.on('quit-app', () => {
   forceQuit();
@@ -339,8 +341,8 @@ const initHID = () => {
              }
              // Byte 3 check (from previous success)
              const pressed = data.length > 3 && data[3] > 0;
-             if (pressed && !lastState) {
-               handleDeviceInput(d.path!);
+             if (pressed && !lastState && d.path) {
+               handleDeviceInput(d.path);
              }
              lastState = pressed;
           });

@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   quitApp: () => ipcRenderer.send('quit-app'),
   
   // Main -> Renderers
-  onUpdateState: (callback: (state: any) => void) => {
+  onUpdateState: (callback: (state: GameStateData) => void) => {
     ipcRenderer.on('update-state', (_event, state) => callback(state));
   },
   

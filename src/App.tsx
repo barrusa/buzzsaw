@@ -23,7 +23,7 @@ const useGameState = () => {
 };
 
 // --- Audio Logic ---
-const buzzAudio = new Audio('sounds/buzz.mp3');
+const buzzAudio = new Audio('sounds/buzz.wav');
 const timeoutAudio = new Audio('sounds/timeout.mp3');
 
 const useAudio = (state: GameStateData) => {
@@ -31,15 +31,15 @@ const useAudio = (state: GameStateData) => {
   const prevTimer = useRef(5);
 
   useEffect(() => {
-    // Buzz Sound: First buzz only
-    if (prevQueueLen.current === 0 && state.buzzQueue.length > 0) {
+    // Buzz Sound: Play on every new buzz
+    if (state.buzzQueue.length > prevQueueLen.current) {
        buzzAudio.currentTime = 0;
        buzzAudio.play().catch(e => console.error("Audio error", e));
     }
     prevQueueLen.current = state.buzzQueue.length;
 
-    // Timeout Sound
-    if (prevTimer.current > 0 && state.timer === 0) {
+    // Timeout Sound: Only play if no one buzzed in
+    if (prevTimer.current > 0 && state.timer === 0 && state.buzzQueue.length === 0) {
        timeoutAudio.currentTime = 0;
        timeoutAudio.play().catch(e => console.error("Audio error", e));
     }
