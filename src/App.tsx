@@ -207,7 +207,7 @@ const BoardWindow = () => {
   const state = useGameState();
   useAudio(state); 
   
-  const { gameState, buzzQueue, timer, players } = state;
+  const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
   const getPlayerName = (id: number) => players?.find(p => p.id === id)?.name || `Player ${id}`;
   
   const getMedal = (index: number) => {
@@ -256,6 +256,30 @@ const BoardWindow = () => {
       </div>
 
       <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        
+        {/* Penalty / Early Buzzers Display */}
+        {earlyBuzzers.filter(pid => !buzzQueue.some(b => b.player === pid)).map(pid => (
+           <div key={`penalty-${pid}`} style={{ 
+             display: 'flex', 
+             justifyContent: 'space-between',
+             alignItems: 'center',
+             padding: '10px 30px',
+             width: '100%',
+             marginBottom: 5,
+             fontSize: '1.8rem',
+             backgroundColor: '#ff0000',
+             border: '2px solid #ff4444',
+             textShadow: '2px 2px 0px #000000',
+             animation: 'shake 0.5s' // Optional visual flair
+           }}>
+             <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+               <span style={{ fontSize: '2rem', width: 50, textAlign: 'center' }}>⚠️</span>
+               <span>{getPlayerName(pid)}</span>
+             </div>
+             <span style={{ opacity: 0.9, fontFamily: "'Oswald', sans-serif" }}>LOCKED</span>
+           </div>
+        ))}
+
         {buzzQueue.length > 0 && (
           <div style={{ 
             backgroundColor: '#0000cc', 

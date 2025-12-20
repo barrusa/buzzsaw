@@ -240,8 +240,13 @@ const forceQuit = () => {
 ipcMain.on('open-floor', () => {
   gameState = 'OPEN';
   buzzQueue = [];
-  earlyBuzzers.clear();
   floorOpenTime = performance.now();
+  
+  // Clear early buzzers after penalty time (250ms)
+  setTimeout(() => {
+    earlyBuzzers.clear();
+    broadcastState();
+  }, 250);
   
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
@@ -370,8 +375,14 @@ app.on('ready', () => {
   globalShortcut.register('CommandOrControl+Shift+O', () => {
     gameState = 'OPEN';
     buzzQueue = [];
-    earlyBuzzers.clear();
     floorOpenTime = performance.now();
+    
+    // Clear early buzzers after penalty time
+    setTimeout(() => {
+      earlyBuzzers.clear();
+      broadcastState();
+    }, 250);
+
     timerValue = 5;
     if (timerInterval) clearInterval(timerInterval);
     broadcastState(); 
