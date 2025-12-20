@@ -201,7 +201,7 @@ const handleBuzz = (playerId: number) => {
       player: playerId,
       timestamp: now,
       delta: delta,
-      label: isFirst ? 'First' : `+${Math.round(delta)}ms`
+      label: isFirst ? '' : `+${Math.round(delta)} MS`
     });
     
     broadcastState();
