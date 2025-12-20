@@ -240,12 +240,14 @@ const BoardWindow = () => {
         marginTop: 0,
         textShadow: '4px 4px 0px #000000',
         backgroundColor: gameState === 'OPEN' ? '#00b300' : 'transparent',
-        padding: '0 40px',
+        padding: '20px 0',
         borderRadius: 20,
         transition: 'all 0.2s ease-in-out',
         width: '100%',
         maxWidth: 900,
-        textAlign: 'center'
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
       }}>
         {timer}
       </div>
