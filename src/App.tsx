@@ -259,7 +259,9 @@ const BoardWindow = () => {
         fontWeight: 'bold',
         letterSpacing: '0.1em',
         color: gameState === 'OPEN' ? '#44ff44' : (gameState === 'LOCKED' ? '#ff4444' : '#8888ff'),
-        textShadow: '2px 2px 0px #000000'
+        textShadow: '2px 2px 0px #000000',
+        textAlign: 'center',
+        width: '100%'
       }}>
         {gameState === 'IDLE' ? 'READY' : gameState}
       </div>
