@@ -341,10 +341,12 @@ const BoardWindow = () => {
               margin: '0',
               textShadow: '3px 3px 0px #000000',
               display: 'flex',
-              justifyContent: 'center',
+              justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-               <span style={{ fontWeight: 'bold' }}>{getPlayerName(buzzQueue[0].player)}</span>
+               <span>🚨</span>
+               <span style={{ fontWeight: 'bold', flex: 1, textAlign: 'center' }}>{getPlayerName(buzzQueue[0].player)}</span>
+               <span>🚨</span>
             </div>
           </div>
         )}
