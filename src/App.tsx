@@ -278,7 +278,8 @@ const BoardWindow = () => {
           color: timer === 0 ? '#ff4444' : (gameState === 'OPEN' ? '#ffffff' : '#aaaaaa'),
           textShadow: '4px 4px 0px #000000',
           minWidth: '100px',
-          textAlign: 'left'
+          textAlign: 'left',
+          marginTop: '-0.1em' // Minor visual tweak to center baseline/cap-height
         }}>
           {timer}
         </div>
