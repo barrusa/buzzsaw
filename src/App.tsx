@@ -298,6 +298,14 @@ const BoardWindow = () => {
       }}>
         {gameState === 'IDLE' ? 'READY' : gameState}
       </div>
+      
+      <style>{`
+        @keyframes winnerPulse {
+          0% { background-color: #0000cc; }
+          50% { background-color: #0000ff; }
+          100% { background-color: #0000cc; }
+        }
+      `}</style>
 
       <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
@@ -334,7 +342,8 @@ const BoardWindow = () => {
             textAlign: 'center',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
             width: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            animation: 'winnerPulse 2s infinite ease-in-out'
           }}>
             <div style={{ 
               fontSize: '3.5rem', 
