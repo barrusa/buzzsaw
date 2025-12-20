@@ -247,7 +247,8 @@ const BoardWindow = () => {
         maxWidth: 900,
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        boxSizing: 'border-box'
       }}>
         {timer}
       </div>
@@ -281,7 +282,8 @@ const BoardWindow = () => {
              backgroundColor: '#ff0000',
              border: '2px solid #ff4444',
              textShadow: '2px 2px 0px #000000',
-             animation: 'shake 0.5s' // Optional visual flair
+             animation: 'shake 0.5s', // Optional visual flair
+             boxSizing: 'border-box'
            }}>
              <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
                <span style={{ fontSize: '2rem', width: 50, textAlign: 'center' }}>⚠️</span>
@@ -299,14 +301,18 @@ const BoardWindow = () => {
             marginBottom: 10,
             textAlign: 'center',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-            width: '100%'
+            width: '100%',
+            boxSizing: 'border-box'
           }}>
             <div style={{ 
               fontSize: '3.5rem', 
               margin: '0',
-              textShadow: '3px 3px 0px #000000'
+              textShadow: '3px 3px 0px #000000',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
             }}>
-               🥇 <span style={{ fontWeight: 'bold' }}>{getPlayerName(buzzQueue[0].player)}</span>
+               <span style={{ fontWeight: 'bold' }}>{getPlayerName(buzzQueue[0].player)}</span>
             </div>
           </div>
         )}
@@ -316,7 +322,8 @@ const BoardWindow = () => {
           border: '2px solid #ffffff',
           width: '100%',
           maxHeight: '300px', // Capping height to prevent long empty area
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxSizing: 'border-box'
         }}>
           {buzzQueue.slice(0, 3).map((b, i) => (
              <div key={i} style={{ 
@@ -327,14 +334,15 @@ const BoardWindow = () => {
                borderBottom: i < 2 && i < buzzQueue.length - 1 ? '2px solid rgba(255,255,255,0.1)' : 'none',
                fontSize: '1.8rem',
                backgroundColor: i === 0 ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-               textShadow: '2px 2px 0px #000000'
+               textShadow: '2px 2px 0px #000000',
+               boxSizing: 'border-box'
              }}>
                <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
                  <span style={{ fontSize: '2rem', width: 50, textAlign: 'center' }}>{getMedal(i)}</span>
                  <span>{getPlayerName(b.player)}</span>
                </div>
                <span style={{ opacity: 0.9, fontFamily: "'Oswald', sans-serif" }}>
-                 {i === 0 ? '🥇' : b.label}
+                 {b.label}
                </span>
              </div>
           ))}
