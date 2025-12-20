@@ -238,7 +238,11 @@ const BoardWindow = () => {
         letterSpacing: '-0.05em', 
         color: timer === 0 ? '#ff4444' : (gameState === 'OPEN' ? '#ffffff' : '#aaaaaa'),
         marginTop: 0,
-        textShadow: '4px 4px 0px #000000'
+        textShadow: '4px 4px 0px #000000',
+        backgroundColor: gameState === 'OPEN' ? '#00b300' : 'transparent',
+        padding: gameState === 'OPEN' ? '0 40px' : '0',
+        borderRadius: 20,
+        transition: 'all 0.2s ease-in-out'
       }}>
         {timer}
       </div>
