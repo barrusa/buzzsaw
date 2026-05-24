@@ -265,7 +265,7 @@ ipcMain.on('open-floor', () => {
   }, 1000);
 });
 
-ipcMain.on('reset-game', () => {
+const resetGameState = () => {
   gameState = 'IDLE';
   buzzQueue = [];
   earlyBuzzers.clear();
@@ -273,6 +273,10 @@ ipcMain.on('reset-game', () => {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = null;
   broadcastState();
+};
+
+ipcMain.on('reset-game', () => {
+  resetGameState();
 });
 
 ipcMain.on('update-player-name', (event, { id, name }) => {
@@ -399,13 +403,7 @@ app.on('ready', () => {
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
-    gameState = 'IDLE';
-    buzzQueue = [];
-    earlyBuzzers.clear();
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
-    broadcastState();
+    resetGameState();
   });
 });
 
