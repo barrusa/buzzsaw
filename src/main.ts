@@ -52,7 +52,7 @@ const loadConfig = (): ConfigData | null => {
   return null;
 };
 
-const saveConfig = () => {
+export const saveConfig = () => {
   try {
     const config: ConfigData = {
       players,
