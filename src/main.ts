@@ -237,17 +237,7 @@ const forceQuit = () => {
 
 // --- IPC Handlers ---
 
-ipcMain.on('open-floor', () => {
-  gameState = 'OPEN';
-  buzzQueue = [];
-  floorOpenTime = performance.now();
-  
-  // Clear early buzzers after penalty time (250ms)
-  setTimeout(() => {
-    earlyBuzzers.clear();
-    broadcastState();
-  }, 250);
-  
+const startFloorTimer = () => {
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
   
@@ -263,6 +253,20 @@ ipcMain.on('open-floor', () => {
     }
     broadcastState();
   }, 1000);
+};
+
+ipcMain.on('open-floor', () => {
+  gameState = 'OPEN';
+  buzzQueue = [];
+  floorOpenTime = performance.now();
+
+  // Clear early buzzers after penalty time (250ms)
+  setTimeout(() => {
+    earlyBuzzers.clear();
+    broadcastState();
+  }, 250);
+
+  startFloorTimer();
 });
 
 ipcMain.on('reset-game', () => {
@@ -383,19 +387,7 @@ app.on('ready', () => {
       broadcastState();
     }, 250);
 
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    broadcastState(); 
-    timerInterval = setInterval(() => {
-      timerValue -= 1;
-      if (timerValue <= 0) {
-        timerValue = 0;
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = null;
-        gameState = 'LOCKED';
-      }
-      broadcastState();
-    }, 1000);
+    startFloorTimer();
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
