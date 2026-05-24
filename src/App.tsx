@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 
 const useGameState = () => {
@@ -104,7 +104,14 @@ const HostWindow = () => {
   const state = useGameState();
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
 
-  const getPlayerName = (id: number) => players.find(p => p.id === id)?.name || `Player ${id}`;
+  const playerMap = useMemo(() => {
+    return players.reduce((acc, p) => {
+      acc[p.id] = p.name;
+      return acc;
+    }, {} as Record<number, string>);
+  }, [players]);
+
+  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', maxWidth: 800, margin: '0 auto' }}>
@@ -208,7 +215,15 @@ const BoardWindow = () => {
   useAudio(state); 
   
   const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
-  const getPlayerName = (id: number) => players?.find(p => p.id === id)?.name || `Player ${id}`;
+
+  const playerMap = useMemo(() => {
+    return (players || []).reduce((acc, p) => {
+      acc[p.id] = p.name;
+      return acc;
+    }, {} as Record<number, string>);
+  }, [players]);
+
+  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
   
   const getMedal = (index: number) => {
     if (index === 0) return '🥇';
