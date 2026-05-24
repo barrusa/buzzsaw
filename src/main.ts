@@ -4,10 +4,11 @@ import fs from 'fs';
 import HID from 'node-hid';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-// (Disabled to fix bundling issues on macOS)
-// if (require('electron-squirrel-startup')) {
-//   app.quit();
-// }
+if (process.platform === 'win32') {
+  if (require('electron-squirrel-startup')) {
+    app.quit();
+  }
+}
 
 // --- Persistence ---
 const DATA_PATH = path.join(app.getPath('userData'), 'buzzsaw-config.json');
