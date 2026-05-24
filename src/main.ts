@@ -77,13 +77,19 @@ interface Buzz {
   label: string;
 }
 
-let gameState: GameState = 'IDLE';
-let buzzQueue: Buzz[] = [];
-const earlyBuzzers: Set<number> = new Set();
-let floorOpenTime = 0;
+export let gameState: GameState = 'IDLE';
+export let buzzQueue: Buzz[] = [];
+export let earlyBuzzers: Set<number> = new Set();
+export let floorOpenTime = 0;
 let timerValue = 5;
 let timerInterval: NodeJS.Timeout | null = null;
 let calibrationTarget: number | null = null;
+
+// --- Expose for testing ---
+export const __setGameStateForTest = (state: GameState) => { gameState = state; };
+export const __setBuzzQueueForTest = (queue: Buzz[]) => { buzzQueue = queue; };
+export const __setEarlyBuzzersForTest = (buzzers: Set<number>) => { earlyBuzzers = buzzers; };
+export const __setFloorOpenTimeForTest = (time: number) => { floorOpenTime = time; };
 
 // Devices
 const VENDOR_ID = 0x0fc5;
@@ -171,7 +177,7 @@ const broadcastState = () => {
 
 // --- Game Logic ---
 
-const handleBuzz = (playerId: number) => {
+export const handleBuzz = (playerId: number) => {
   const now = performance.now();
 
   if (gameState === 'IDLE') {
