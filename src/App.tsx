@@ -26,7 +26,7 @@ const useGameState = () => {
 const buzzAudio = new Audio('sounds/buzz.wav');
 const timeoutAudio = new Audio('sounds/timeout.mp3');
 
-const useAudio = (state: GameStateData) => {
+export const useAudio = (state: GameStateData) => {
   const prevQueueLen = useRef(0);
   const prevTimer = useRef(5);
 
