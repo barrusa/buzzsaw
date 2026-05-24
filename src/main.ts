@@ -52,6 +52,8 @@ const loadConfig = (): ConfigData | null => {
   return null;
 };
 
+let savePromise = Promise.resolve();
+
 const saveConfig = () => {
   try {
     const config: ConfigData = {
@@ -59,10 +61,15 @@ const saveConfig = () => {
       hostBounds: mainWindow?.getBounds(),
       boardBounds: boardWindow?.getBounds(),
     };
-    fs.writeFileSync(DATA_PATH, JSON.stringify(config, null, 2));
-    console.log('Saved config to', DATA_PATH);
+    const data = JSON.stringify(config, null, 2);
+    savePromise = savePromise
+      .then(() => fs.promises.writeFile(DATA_PATH, data))
+      .then(() => console.log('Saved config to', DATA_PATH))
+      .catch((e) => console.error('Failed to save config:', e));
+    return savePromise;
   } catch (e) {
     console.error('Failed to save config:', e);
+    return savePromise;
   }
 };
 
@@ -230,9 +237,10 @@ const handleDeviceInput = (devicePath: string) => {
 
 // --- Helper: Force Quit ---
 const forceQuit = () => {
-  saveConfig();
-  // Nuclear option: Kill the process to prevent node-hid hangs
-  process.kill(process.pid, 'SIGKILL');
+  saveConfig().finally(() => {
+    // Nuclear option: Kill the process to prevent node-hid hangs
+    process.kill(process.pid, 'SIGKILL');
+  });
 };
 
 // --- IPC Handlers ---
