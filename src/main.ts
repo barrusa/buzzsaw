@@ -79,6 +79,7 @@ interface Buzz {
 
 let gameState: GameState = 'IDLE';
 let buzzQueue: Buzz[] = [];
+const buzzedPlayers: Set<number> = new Set();
 const earlyBuzzers: Set<number> = new Set();
 let floorOpenTime = 0;
 let timerValue = 5;
@@ -192,7 +193,7 @@ const handleBuzz = (playerId: number) => {
       }
     }
 
-    if (buzzQueue.find(b => b.player === playerId)) return;
+    if (buzzedPlayers.has(playerId)) return;
 
     const isFirst = buzzQueue.length === 0;
     const delta = isFirst ? 0 : now - buzzQueue[0].timestamp;
@@ -203,6 +204,7 @@ const handleBuzz = (playerId: number) => {
       delta: delta,
       label: isFirst ? '' : `+${Math.round(delta)} MS`
     });
+    buzzedPlayers.add(playerId);
     
     broadcastState();
   }
@@ -240,6 +242,7 @@ const forceQuit = () => {
 ipcMain.on('open-floor', () => {
   gameState = 'OPEN';
   buzzQueue = [];
+  buzzedPlayers.clear();
   floorOpenTime = performance.now();
   
   // Clear early buzzers after penalty time (250ms)
@@ -268,6 +271,7 @@ ipcMain.on('open-floor', () => {
 ipcMain.on('reset-game', () => {
   gameState = 'IDLE';
   buzzQueue = [];
+  buzzedPlayers.clear();
   earlyBuzzers.clear();
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
@@ -375,6 +379,7 @@ app.on('ready', () => {
   globalShortcut.register('CommandOrControl+Shift+O', () => {
     gameState = 'OPEN';
     buzzQueue = [];
+    buzzedPlayers.clear();
     floorOpenTime = performance.now();
     
     // Clear early buzzers after penalty time
@@ -401,6 +406,7 @@ app.on('ready', () => {
   globalShortcut.register('CommandOrControl+Shift+R', () => {
     gameState = 'IDLE';
     buzzQueue = [];
+    buzzedPlayers.clear();
     earlyBuzzers.clear();
     timerValue = 5;
     if (timerInterval) clearInterval(timerInterval);
