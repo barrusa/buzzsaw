@@ -37,7 +37,7 @@ let players: Player[] = [
   { id: 3, name: "Player 3", devicePath: null },
 ];
 
-const loadConfig = (): ConfigData | null => {
+export const loadConfig = (): ConfigData | null => {
   try {
     if (fs.existsSync(DATA_PATH)) {
       const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
