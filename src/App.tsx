@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 
-const useGameState = () => {
+export const useGameState = () => {
   const [state, setState] = useState<GameStateData>({
     gameState: 'IDLE',
     buzzQueue: [],
