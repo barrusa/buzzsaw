@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 
 const useGameState = () => {
@@ -217,6 +217,8 @@ const BoardWindow = () => {
     return `#${index + 1}`;
   };
 
+  const buzzedPlayerIds = useMemo(() => new Set(buzzQueue.map(b => b.player)), [buzzQueue]);
+
   return (
     <div style={{ 
       padding: 20, 
@@ -310,7 +312,7 @@ const BoardWindow = () => {
       <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
         {/* Penalty / Early Buzzers Display */}
-        {earlyBuzzers.filter(pid => !buzzQueue.some(b => b.player === pid)).map(pid => (
+        {earlyBuzzers.filter(pid => !buzzedPlayerIds.has(pid)).map(pid => (
            <div key={`penalty-${pid}`} style={{ 
              display: 'flex', 
              justifyContent: 'space-between',
