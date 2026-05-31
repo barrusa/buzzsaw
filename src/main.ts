@@ -276,6 +276,7 @@ ipcMain.on('reset-game', () => {
 });
 
 ipcMain.on('update-player-name', (event, { id, name }) => {
+  if (typeof id !== 'number' || typeof name !== 'string') return;
   const p = players.find(player => player.id === id);
   if (p) {
     p.name = name;
@@ -285,6 +286,7 @@ ipcMain.on('update-player-name', (event, { id, name }) => {
 });
 
 ipcMain.on('start-calibration', (event, playerId) => {
+  if (typeof playerId !== 'number') return;
   calibrationTarget = playerId;
   broadcastState();
 });
@@ -295,6 +297,7 @@ ipcMain.on('cancel-calibration', () => {
 });
 
 ipcMain.on('simulate-buzz', (event, playerId) => {
+  if (typeof playerId !== 'number') return;
   handleBuzz(playerId);
 });
 
