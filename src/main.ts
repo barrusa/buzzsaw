@@ -37,14 +37,39 @@ let players: Player[] = [
   { id: 3, name: "Player 3", devicePath: null },
 ];
 
+const isValidWindowBounds = (bounds: unknown): bounds is WindowBounds => {
+  if (typeof bounds !== 'object' || bounds === null) return false;
+  const b = bounds as Record<string, unknown>;
+  return typeof b.x === 'number' && typeof b.y === 'number' && typeof b.width === 'number' && typeof b.height === 'number';
+};
+
+const isValidPlayer = (player: unknown): player is Player => {
+  if (typeof player !== 'object' || player === null) return false;
+  const p = player as Record<string, unknown>;
+  return typeof p.id === 'number' && typeof p.name === 'string' && (typeof p.devicePath === 'string' || p.devicePath === null);
+};
+
+const isValidConfigData = (data: unknown): data is ConfigData => {
+  if (typeof data !== 'object' || data === null) return false;
+  const d = data as Record<string, unknown>;
+  if (!Array.isArray(d.players)) return false;
+  if (!d.players.every(isValidPlayer)) return false;
+  if (d.hostBounds !== undefined && !isValidWindowBounds(d.hostBounds)) return false;
+  if (d.boardBounds !== undefined && !isValidWindowBounds(d.boardBounds)) return false;
+  return true;
+};
+
 export const loadConfig = (): ConfigData | null => {
   try {
     if (fs.existsSync(DATA_PATH)) {
       const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-      if (data.players) {
+      if (isValidConfigData(data)) {
         players = data.players;
+        return data;
+      } else {
+        console.error('Failed to load config: Invalid configuration format');
+        return null;
       }
-      return data;
     }
   } catch (e) {
     console.error('Failed to load config:', e);
