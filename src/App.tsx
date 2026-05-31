@@ -217,6 +217,8 @@ const BoardWindow = () => {
     return `#${index + 1}`;
   };
 
+  const buzzQueuePlayerIds = new Set(buzzQueue.map(b => b.player));
+
   return (
     <div style={{ 
       padding: 20, 
@@ -310,7 +312,7 @@ const BoardWindow = () => {
       <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
         {/* Penalty / Early Buzzers Display */}
-        {earlyBuzzers.filter(pid => !buzzQueue.some(b => b.player === pid)).map(pid => (
+        {earlyBuzzers.filter(pid => !buzzQueuePlayerIds.has(pid)).map(pid => (
            <div key={`penalty-${pid}`} style={{ 
              display: 'flex', 
              justifyContent: 'space-between',
