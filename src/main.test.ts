@@ -39,10 +39,12 @@ import { loadConfig, handleBuzz, __setGameStateForTest, __getEarlyBuzzersForTest
 
 describe('loadConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let consoleErrorSpy: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -78,7 +80,7 @@ describe('loadConfig', () => {
     expect(result).toEqual(mockConfig);
   });
 
-  it('should return parsed config without modifying players if no players property exists', () => {
+  it('should return null if the config lacks a players array', () => {
     const mockConfig = {
       hostBounds: { x: 0, y: 0, width: 800, height: 600 }
     };
@@ -88,7 +90,24 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual(mockConfig);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config: Invalid configuration format');
+    expect(result).toBeNull();
+  });
+
+  it('should return null if a player has an invalid id type', () => {
+    const mockConfig = {
+      players: [
+        { id: "1", name: "Test Player", devicePath: "test-path" } // id should be a number
+      ]
+    };
+
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockConfig));
+
+    const result = loadConfig();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config: Invalid configuration format');
+    expect(result).toBeNull();
   });
 
   it('should catch errors, log them, and return null on invalid JSON', () => {
