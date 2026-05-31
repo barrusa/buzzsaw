@@ -306,10 +306,6 @@ ipcMain.on('request-state', () => {
   broadcastState();
 });
 
-ipcMain.on('start-timer', () => {
-  // Placeholder for future timer start logic if needed
-});
-
 ipcMain.on('quit-app', () => {
   forceQuit();
 });

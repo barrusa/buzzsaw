@@ -39,11 +39,15 @@ import { loadConfig } from './main';
 
 describe('loadConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   let consoleErrorSpy: any;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   beforeEach(() => {
     vi.clearAllMocks();
+    /* eslint-disable @typescript-eslint/no-empty-function */
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    /* eslint-enable @typescript-eslint/no-empty-function */
   });
 
   afterEach(() => {
