@@ -235,9 +235,9 @@ const forceQuit = () => {
   process.kill(process.pid, 'SIGKILL');
 };
 
-// --- IPC Handlers ---
+// --- Shared Logic ---
 
-ipcMain.on('open-floor', () => {
+const openFloor = () => {
   gameState = 'OPEN';
   buzzQueue = [];
   floorOpenTime = performance.now();
@@ -263,9 +263,9 @@ ipcMain.on('open-floor', () => {
     }
     broadcastState();
   }, 1000);
-});
+};
 
-ipcMain.on('reset-game', () => {
+const resetGame = () => {
   gameState = 'IDLE';
   buzzQueue = [];
   earlyBuzzers.clear();
@@ -273,6 +273,16 @@ ipcMain.on('reset-game', () => {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = null;
   broadcastState();
+};
+
+// --- IPC Handlers ---
+
+ipcMain.on('open-floor', () => {
+  openFloor();
+});
+
+ipcMain.on('reset-game', () => {
+  resetGame();
 });
 
 ipcMain.on('update-player-name', (event, { id, name }) => {
@@ -373,39 +383,11 @@ app.on('ready', () => {
   initHID();
 
   globalShortcut.register('CommandOrControl+Shift+O', () => {
-    gameState = 'OPEN';
-    buzzQueue = [];
-    floorOpenTime = performance.now();
-    
-    // Clear early buzzers after penalty time
-    setTimeout(() => {
-      earlyBuzzers.clear();
-      broadcastState();
-    }, 250);
-
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    broadcastState(); 
-    timerInterval = setInterval(() => {
-      timerValue -= 1;
-      if (timerValue <= 0) {
-        timerValue = 0;
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = null;
-        gameState = 'LOCKED';
-      }
-      broadcastState();
-    }, 1000);
+    openFloor();
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
-    gameState = 'IDLE';
-    buzzQueue = [];
-    earlyBuzzers.clear();
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
-    broadcastState();
+    resetGame();
   });
 });
 
