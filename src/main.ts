@@ -237,6 +237,16 @@ const forceQuit = () => {
 
 // --- IPC Handlers ---
 
+const resetGame = () => {
+  gameState = 'IDLE';
+  buzzQueue = [];
+  earlyBuzzers.clear();
+  timerValue = 5;
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  broadcastState();
+};
+
 ipcMain.on('open-floor', () => {
   gameState = 'OPEN';
   buzzQueue = [];
@@ -266,13 +276,7 @@ ipcMain.on('open-floor', () => {
 });
 
 ipcMain.on('reset-game', () => {
-  gameState = 'IDLE';
-  buzzQueue = [];
-  earlyBuzzers.clear();
-  timerValue = 5;
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = null;
-  broadcastState();
+  resetGame();
 });
 
 ipcMain.on('update-player-name', (event, { id, name }) => {
@@ -399,13 +403,7 @@ app.on('ready', () => {
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
-    gameState = 'IDLE';
-    buzzQueue = [];
-    earlyBuzzers.clear();
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
-    broadcastState();
+    resetGame();
   });
 });
 
