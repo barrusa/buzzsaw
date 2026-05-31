@@ -35,11 +35,11 @@ vi.mock('fs', () => ({
   writeFileSync: vi.fn(),
 }));
 
-import { loadConfig, saveConfig } from './main';
+import { loadConfig, saveConfig, handleBuzz, __setGameStateForTest, __getEarlyBuzzersForTest, __setFloorOpenTimeForTest, __getBuzzQueueForTest, __setBuzzQueueForTest } from './main';
 
 describe('loadConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
-  let consoleErrorSpy: any;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -78,7 +78,7 @@ describe('loadConfig', () => {
     expect(result).toEqual(mockConfig);
   });
 
-  it('should return parsed config without modifying players if no players property exists', () => {
+  it('should return null if the config lacks a players array', () => {
     const mockConfig = {
       hostBounds: { x: 0, y: 0, width: 800, height: 600 }
     };
@@ -88,7 +88,24 @@ describe('loadConfig', () => {
 
     const result = loadConfig();
 
-    expect(result).toEqual(mockConfig);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config: Invalid configuration format');
+    expect(result).toBeNull();
+  });
+
+  it('should return null if a player has an invalid id type', () => {
+    const mockConfig = {
+      players: [
+        { id: "1", name: "Test Player", devicePath: "test-path" } // id should be a number
+      ]
+    };
+
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockConfig));
+
+    const result = loadConfig();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config: Invalid configuration format');
+    expect(result).toBeNull();
   });
 
   it('should catch errors, log them, and return null on invalid JSON', () => {
@@ -106,8 +123,8 @@ describe('loadConfig', () => {
 
 describe('saveConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
-  let consoleErrorSpy: any;
-  let consoleLogSpy: any;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -137,5 +154,88 @@ describe('saveConfig', () => {
 
     expect(fs.writeFileSync).toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', mockError);
+  });
+});
+
+describe('handleBuzz', () => {
+  let performanceNowSpy: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __getEarlyBuzzersForTest().clear();
+    __setBuzzQueueForTest([]);
+    __setFloorOpenTimeForTest(0);
+    __setGameStateForTest('IDLE');
+    performanceNowSpy = vi.spyOn(performance, 'now');
+  });
+
+  afterEach(() => {
+    performanceNowSpy.mockRestore();
+  });
+
+  it('should add player to earlyBuzzers and trigger broadcast if buzzing in IDLE state', () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    __setGameStateForTest('IDLE');
+
+    handleBuzz(1);
+
+    expect(__getEarlyBuzzersForTest().has(1)).toBe(true);
+    expect(consoleLogSpy).toHaveBeenCalledWith('Player 1 buzzed early!');
+    // Ideally we would verify broadcastState was called, but since it's an internal function and
+    // not easily mockable without refactoring, we verify state changes.
+
+    consoleLogSpy.mockRestore();
+  });
+
+  it('should not add to earlyBuzzers again if player already buzzed early in IDLE state', () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    __setGameStateForTest('IDLE');
+    __getEarlyBuzzersForTest().add(1);
+
+    handleBuzz(1);
+
+    expect(__getEarlyBuzzersForTest().size).toBe(1);
+    expect(consoleLogSpy).not.toHaveBeenCalled();
+
+    consoleLogSpy.mockRestore();
+  });
+
+  it('should ignore buzz if player is in earlyBuzzers and buzzing within penalty period during OPEN state', () => {
+    __setGameStateForTest('OPEN');
+    __getEarlyBuzzersForTest().add(1);
+    __setFloorOpenTimeForTest(1000);
+    performanceNowSpy.mockReturnValue(1100); // 100ms after floor open (within 250ms penalty)
+
+    handleBuzz(1);
+
+    expect(__getBuzzQueueForTest()).toHaveLength(0);
+  });
+
+  it('should register buzz if player is in earlyBuzzers and buzzing after penalty period during OPEN state', () => {
+    __setGameStateForTest('OPEN');
+    __getEarlyBuzzersForTest().add(1);
+    __setFloorOpenTimeForTest(1000);
+    performanceNowSpy.mockReturnValue(1300); // 300ms after floor open (after 250ms penalty)
+
+    handleBuzz(1);
+
+    const queue = __getBuzzQueueForTest();
+    expect(queue).toHaveLength(1);
+    expect(queue[0].player).toBe(1);
+    expect(queue[0].timestamp).toBe(1300);
+    expect(queue[0].delta).toBe(0);
+    expect(queue[0].label).toBe('');
+  });
+
+  it('should register normal buzz if player is not in earlyBuzzers during OPEN state', () => {
+    __setGameStateForTest('OPEN');
+    performanceNowSpy.mockReturnValue(1050);
+
+    handleBuzz(2);
+
+    const queue = __getBuzzQueueForTest();
+    expect(queue).toHaveLength(1);
+    expect(queue[0].player).toBe(2);
+    expect(queue[0].timestamp).toBe(1050);
   });
 });
