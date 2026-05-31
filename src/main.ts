@@ -103,6 +103,8 @@ const createMainWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -135,6 +137,8 @@ const createBoardWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
