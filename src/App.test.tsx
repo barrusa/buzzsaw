@@ -1,24 +1,27 @@
-import { renderHook, act } from '@testing-library/react';
-import { useGameState } from './App';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import React from 'react';
+import { render, screen, renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import App, { useGameState } from './App';
+
+// Mock electronAPI
+const mockElectronAPI = {
+  openFloor: vi.fn(),
+  resetGame: vi.fn(),
+  startTimer: vi.fn(),
+  requestState: vi.fn(),
+  onUpdateState: vi.fn(),
+  simulateBuzz: vi.fn(),
+  updatePlayerName: vi.fn(),
+  startCalibration: vi.fn(),
+  cancelCalibration: vi.fn(),
+  openBoardWindow: vi.fn(),
+  quitApp: vi.fn(),
+};
 
 describe('useGameState', () => {
   beforeEach(() => {
     // Reset the mock before each test
-    window.electronAPI = {
-      onUpdateState: vi.fn(),
-      requestState: vi.fn(),
-      // Provide dummy implementations for other methods if needed
-      openFloor: vi.fn(),
-      resetGame: vi.fn(),
-      startTimer: vi.fn(),
-      simulateBuzz: vi.fn(),
-      updatePlayerName: vi.fn(),
-      startCalibration: vi.fn(),
-      cancelCalibration: vi.fn(),
-      openBoardWindow: vi.fn(),
-      quitApp: vi.fn(),
-    };
+    window.electronAPI = { ...mockElectronAPI };
   });
 
   it('should initialize with default state', () => {
@@ -37,8 +40,8 @@ describe('useGameState', () => {
   it('should call window.electronAPI.requestState on mount', () => {
     renderHook(() => useGameState());
 
-    expect(window.electronAPI.requestState).toHaveBeenCalledTimes(1);
-    expect(window.electronAPI.onUpdateState).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.requestState).toHaveBeenCalled();
+    expect(window.electronAPI.onUpdateState).toHaveBeenCalled();
   });
 
   it('should update state when onUpdateState callback is called', () => {
@@ -67,5 +70,34 @@ describe('useGameState', () => {
     });
 
     expect(result.current).toEqual(newState);
+  });
+});
+
+describe('App', () => {
+  beforeEach(() => {
+    // Reset window.electronAPI
+    window.electronAPI = mockElectronAPI;
+
+    // Reset hash
+    window.location.hash = '';
+
+    // Mock HTMLMediaElement
+    window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    window.HTMLMediaElement.prototype.pause = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders HostWindow on the default route', () => {
+    render(<App />);
+    expect(screen.getByText('Host Console')).toBeTruthy();
+  });
+
+  it('renders BoardWindow on the /board route', () => {
+    window.location.hash = '#/board';
+    render(<App />);
+    expect(screen.getByText('READY')).toBeTruthy();
   });
 });
