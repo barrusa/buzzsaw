@@ -37,6 +37,8 @@ let players: Player[] = [
   { id: 3, name: "Player 3", devicePath: null },
 ];
 
+let saveConfigPromise: Promise<void> = Promise.resolve();
+
 export const loadConfig = (): ConfigData | null => {
   try {
     if (fs.existsSync(DATA_PATH)) {
@@ -53,17 +55,17 @@ export const loadConfig = (): ConfigData | null => {
 };
 
 const saveConfig = () => {
-  try {
-    const config: ConfigData = {
-      players,
-      hostBounds: mainWindow?.getBounds(),
-      boardBounds: boardWindow?.getBounds(),
-    };
-    fs.writeFileSync(DATA_PATH, JSON.stringify(config, null, 2));
-    console.log('Saved config to', DATA_PATH);
-  } catch (e) {
-    console.error('Failed to save config:', e);
-  }
+  const config: ConfigData = {
+    players,
+    hostBounds: mainWindow?.getBounds(),
+    boardBounds: boardWindow?.getBounds(),
+  };
+  const data = JSON.stringify(config, null, 2);
+
+  saveConfigPromise = saveConfigPromise
+    .then(() => fs.promises.writeFile(DATA_PATH, data))
+    .then(() => console.log('Saved config to', DATA_PATH))
+    .catch((e) => console.error('Failed to save config:', e));
 };
 
 // --- Game State & Logic ---
@@ -229,8 +231,9 @@ const handleDeviceInput = (devicePath: string) => {
 };
 
 // --- Helper: Force Quit ---
-const forceQuit = () => {
+const forceQuit = async () => {
   saveConfig();
+  await saveConfigPromise;
   // Nuclear option: Kill the process to prevent node-hid hangs
   process.kill(process.pid, 'SIGKILL');
 };
