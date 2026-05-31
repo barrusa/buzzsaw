@@ -171,7 +171,27 @@ const broadcastState = () => {
 
 // --- Game Logic ---
 
-const handleBuzz = (playerId: number) => {
+export const __setGameStateForTest = (state: GameState) => {
+  gameState = state;
+};
+
+export const __getEarlyBuzzersForTest = () => {
+  return earlyBuzzers;
+};
+
+export const __setFloorOpenTimeForTest = (time: number) => {
+  floorOpenTime = time;
+};
+
+export const __getBuzzQueueForTest = () => {
+  return buzzQueue;
+};
+
+export const __setBuzzQueueForTest = (queue: Buzz[]) => {
+  buzzQueue = queue;
+};
+
+export const handleBuzz = (playerId: number) => {
   const now = performance.now();
 
   if (gameState === 'IDLE') {
