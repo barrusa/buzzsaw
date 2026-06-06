@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import {
+  loadConfig,
+  saveConfig,
+  handleBuzz,
+  __setGameStateForTest,
+  __getEarlyBuzzersForTest,
+  __setFloorOpenTimeForTest,
+  __getBuzzQueueForTest,
+  __setBuzzQueueForTest
+} from './main';
 
 // Mocks setup
 vi.mock('node-hid', () => ({
@@ -35,8 +45,41 @@ vi.mock('fs', () => ({
   writeFileSync: vi.fn(),
 }));
 
-import { loadConfig, saveConfig, handleBuzz, __setGameStateForTest, __getEarlyBuzzersForTest, __setFloorOpenTimeForTest, __getBuzzQueueForTest, __setBuzzQueueForTest } from './main';
+describe('saveConfig', () => {
+  const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
+  let consoleErrorSpy: any;
+  let consoleLogSpy: any;
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    consoleLogSpy.mockRestore();
+  });
+
+  it('should successfully save config and log', () => {
+    saveConfig();
+
+    expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(consoleLogSpy).toHaveBeenCalledWith('Saved config to', MOCK_DATA_PATH);
+  });
+
+  it('should catch errors and log them when fs.writeFileSync fails', () => {
+    const mockError = new Error('Disk full');
+    vi.mocked(fs.writeFileSync).mockImplementation(() => {
+      throw mockError;
+    });
+
+    saveConfig();
+
+    expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', mockError);
+  });
+});
 describe('loadConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -118,42 +161,6 @@ describe('loadConfig', () => {
     expect(consoleErrorSpy).toHaveBeenCalled();
     expect(consoleErrorSpy.mock.calls[0][0]).toBe('Failed to load config:');
     expect(result).toBeNull();
-  });
-});
-
-describe('saveConfig', () => {
-  const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore();
-    consoleLogSpy.mockRestore();
-  });
-
-  it('should successfully save config and log', () => {
-    saveConfig();
-
-    expect(fs.writeFileSync).toHaveBeenCalled();
-    expect(consoleLogSpy).toHaveBeenCalledWith('Saved config to', MOCK_DATA_PATH);
-  });
-
-  it('should catch errors and log them when fs.writeFileSync fails', () => {
-    const mockError = new Error('Disk full');
-    vi.mocked(fs.writeFileSync).mockImplementation(() => {
-      throw mockError;
-    });
-
-    saveConfig();
-
-    expect(fs.writeFileSync).toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', mockError);
   });
 });
 

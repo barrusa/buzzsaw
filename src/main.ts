@@ -4,11 +4,11 @@ import fs from 'fs';
 import HID from 'node-hid';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-// (Disabled to fix bundling issues on macOS)
-// if (require('electron-squirrel-startup')) {
-//   app.quit();
-// }
-
+if (process.platform === 'win32') {
+  if (require('electron-squirrel-startup')) {
+    app.quit();
+  }
+}
 // --- Persistence ---
 const DATA_PATH = path.join(app.getPath('userData'), 'buzzsaw-config.json');
 
@@ -102,13 +102,21 @@ interface Buzz {
   label: string;
 }
 
-let gameState: GameState = 'IDLE';
-let buzzQueue: Buzz[] = [];
-const earlyBuzzers: Set<number> = new Set();
-let floorOpenTime = 0;
+export let gameState: GameState = 'IDLE';
+export let buzzQueue: Buzz[] = [];
+export let earlyBuzzers: Set<number> = new Set();
+export let floorOpenTime = 0;
 let timerValue = 5;
 let timerInterval: NodeJS.Timeout | null = null;
 let calibrationTarget: number | null = null;
+
+// --- Expose for testing ---
+export const __setGameStateForTest = (state: GameState) => { gameState = state; };
+export const __setBuzzQueueForTest = (queue: Buzz[]) => { buzzQueue = queue; };
+export const __setEarlyBuzzersForTest = (buzzers: Set<number>) => { earlyBuzzers = buzzers; };
+export const __setFloorOpenTimeForTest = (time: number) => { floorOpenTime = time; };
+export const __getEarlyBuzzersForTest = () => { return earlyBuzzers; };
+export const __getBuzzQueueForTest = () => { return buzzQueue; };
 
 // Devices
 const VENDOR_ID = 0x0fc5;
@@ -128,6 +136,8 @@ const createMainWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -160,6 +170,8 @@ const createBoardWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -196,25 +208,6 @@ const broadcastState = () => {
 
 // --- Game Logic ---
 
-export const __setGameStateForTest = (state: GameState) => {
-  gameState = state;
-};
-
-export const __getEarlyBuzzersForTest = () => {
-  return earlyBuzzers;
-};
-
-export const __setFloorOpenTimeForTest = (time: number) => {
-  floorOpenTime = time;
-};
-
-export const __getBuzzQueueForTest = () => {
-  return buzzQueue;
-};
-
-export const __setBuzzQueueForTest = (queue: Buzz[]) => {
-  buzzQueue = queue;
-};
 
 export const handleBuzz = (playerId: number) => {
   const now = performance.now();
@@ -282,6 +275,16 @@ const forceQuit = () => {
 
 // --- IPC Handlers ---
 
+const resetGame = () => {
+  gameState = 'IDLE';
+  buzzQueue = [];
+  earlyBuzzers.clear();
+  timerValue = 5;
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  broadcastState();
+};
+
 ipcMain.on('open-floor', () => {
   gameState = 'OPEN';
   buzzQueue = [];
@@ -311,13 +314,7 @@ ipcMain.on('open-floor', () => {
 });
 
 ipcMain.on('reset-game', () => {
-  gameState = 'IDLE';
-  buzzQueue = [];
-  earlyBuzzers.clear();
-  timerValue = 5;
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = null;
-  broadcastState();
+  resetGame();
 });
 
 ipcMain.on('update-player-name', (event, { id, name }) => {
@@ -349,10 +346,6 @@ ipcMain.on('open-board-window', () => {
 
 ipcMain.on('request-state', () => {
   broadcastState();
-});
-
-ipcMain.on('start-timer', () => {
-  // Placeholder for future timer start logic if needed
 });
 
 ipcMain.on('quit-app', () => {
@@ -444,13 +437,7 @@ app.on('ready', () => {
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
-    gameState = 'IDLE';
-    buzzQueue = [];
-    earlyBuzzers.clear();
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
-    broadcastState();
+    resetGame();
   });
 });
 
