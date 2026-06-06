@@ -73,7 +73,6 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
