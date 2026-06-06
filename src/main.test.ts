@@ -36,11 +36,9 @@ vi.mock('fs', () => ({
 }));
 
 import { loadConfig, handleBuzz, __setGameStateForTest, __getEarlyBuzzersForTest, __setFloorOpenTimeForTest, __getBuzzQueueForTest, __setBuzzQueueForTest } from './main';
-
 describe('loadConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let consoleErrorSpy: any;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
