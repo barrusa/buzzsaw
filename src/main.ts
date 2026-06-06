@@ -3,12 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import HID from 'node-hid';
 
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-// (Disabled to fix bundling issues on macOS)
-// if (require('electron-squirrel-startup')) {
-//   app.quit();
-// }
-
 // --- Persistence ---
 const DATA_PATH = path.join(app.getPath('userData'), 'buzzsaw-config.json');
 
@@ -77,7 +71,7 @@ export const loadConfig = (): ConfigData | null => {
   return null;
 };
 
-const saveConfig = () => {
+export const saveConfig = () => {
   try {
     const config: ConfigData = {
       players,
@@ -338,10 +332,6 @@ ipcMain.on('open-board-window', () => {
 
 ipcMain.on('request-state', () => {
   broadcastState();
-});
-
-ipcMain.on('start-timer', () => {
-  // Placeholder for future timer start logic if needed
 });
 
 ipcMain.on('quit-app', () => {
