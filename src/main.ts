@@ -36,41 +36,17 @@ let players: Player[] = [
   { id: 2, name: "Player 2", devicePath: null },
   { id: 3, name: "Player 3", devicePath: null },
 ];
+
 let saveConfigPromise: Promise<void> = Promise.resolve();
-
-const isValidWindowBounds = (bounds: unknown): bounds is WindowBounds => {
-  if (typeof bounds !== 'object' || bounds === null) return false;
-  const b = bounds as Record<string, unknown>;
-  return typeof b.x === 'number' && typeof b.y === 'number' && typeof b.width === 'number' && typeof b.height === 'number';
-};
-
-const isValidPlayer = (player: unknown): player is Player => {
-  if (typeof player !== 'object' || player === null) return false;
-  const p = player as Record<string, unknown>;
-  return typeof p.id === 'number' && typeof p.name === 'string' && (typeof p.devicePath === 'string' || p.devicePath === null);
-};
-
-const isValidConfigData = (data: unknown): data is ConfigData => {
-  if (typeof data !== 'object' || data === null) return false;
-  const d = data as Record<string, unknown>;
-  if (!Array.isArray(d.players)) return false;
-  if (!d.players.every(isValidPlayer)) return false;
-  if (d.hostBounds !== undefined && !isValidWindowBounds(d.hostBounds)) return false;
-  if (d.boardBounds !== undefined && !isValidWindowBounds(d.boardBounds)) return false;
-  return true;
-};
 
 export const loadConfig = (): ConfigData | null => {
   try {
     if (fs.existsSync(DATA_PATH)) {
       const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-      if (isValidConfigData(data)) {
+      if (data.players) {
         players = data.players;
-        return data;
-      } else {
-        console.error('Failed to load config: Invalid configuration format');
-        return null;
       }
+      return data;
     }
   } catch (e) {
     console.error('Failed to load config:', e);
@@ -197,27 +173,7 @@ const broadcastState = () => {
 
 // --- Game Logic ---
 
-export const __setGameStateForTest = (state: GameState) => {
-  gameState = state;
-};
-
-export const __getEarlyBuzzersForTest = () => {
-  return earlyBuzzers;
-};
-
-export const __setFloorOpenTimeForTest = (time: number) => {
-  floorOpenTime = time;
-};
-
-export const __getBuzzQueueForTest = () => {
-  return buzzQueue;
-};
-
-export const __setBuzzQueueForTest = (queue: Buzz[]) => {
-  buzzQueue = queue;
-};
-
-export const handleBuzz = (playerId: number) => {
+const handleBuzz = (playerId: number) => {
   const now = performance.now();
 
   if (gameState === 'IDLE') {
