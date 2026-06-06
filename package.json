@@ -39,7 +39,7 @@
     "@types/testing-library__jest-dom": "^5.14.9",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^5.1.2",
     "electron": "39.2.7",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
+    "node-addon-api": "^8.0.0",
     "node-hid": "^3.2.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
