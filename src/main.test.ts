@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import {
+  loadConfig,
+  saveConfig,
+  handleBuzz,
+  __setGameStateForTest,
+  __getEarlyBuzzersForTest,
+  __setFloorOpenTimeForTest,
+  __getBuzzQueueForTest,
+  __setBuzzQueueForTest
+} from './main';
 
 // Mocks setup
 vi.mock('node-hid', () => ({
@@ -35,12 +45,31 @@ vi.mock('fs', () => ({
   writeFileSync: vi.fn(),
 }));
 
-import { loadConfig, handleBuzz, __setGameStateForTest, __getEarlyBuzzersForTest, __setFloorOpenTimeForTest, __getBuzzQueueForTest, __setBuzzQueueForTest } from './main';
+describe('saveConfig', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
+  it('should catch and log errors thrown by fs.writeFileSync', () => {
+    const error = new Error('Disk full');
+    vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {
+      throw error;
+    });
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // Mock implementation to prevent actual console.error output during testing
+    });
+
+    saveConfig();
+
+    expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', error);
+    consoleErrorSpy.mockRestore();
+  });
+});
 describe('loadConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let consoleErrorSpy: any;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
