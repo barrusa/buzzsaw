@@ -6,6 +6,7 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 interface ElectronAPI {
   openFloor: () => void;
   resetGame: () => void;
+  startTimer: () => void; // Kept for API compatibility, though openFloor does it now
   requestState: () => void;
   onUpdateState: (callback: (state: GameStateData) => void) => void;
   simulateBuzz: (playerId: number) => void;
