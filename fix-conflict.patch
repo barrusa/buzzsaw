@@ -1,0 +1,20 @@
+--- src/main.ts
++++ src/main.ts
+@@ -321,11 +321,8 @@
+     broadcastState();
+   }, 1000);
+ });
+
+-    resetGame();
+ ipcMain.on('reset-game', () => {
+   resetGame();
+->>>>>>> origin/main
+ });
+
+@@ -470,6 +467,4 @@
+   globalShortcut.register('CommandOrControl+Shift+R', () => {
+     resetGame();
+-    resetGame();
+->>>>>>> origin/main
+   });
+ });
