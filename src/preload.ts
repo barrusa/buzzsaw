@@ -7,7 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Host -> Main
   openFloor: () => ipcRenderer.send('open-floor'),
   resetGame: () => ipcRenderer.send('reset-game'),
-  startTimer: () => ipcRenderer.send('start-timer'),
   requestState: () => ipcRenderer.send('request-state'),
   
   // Player Management
