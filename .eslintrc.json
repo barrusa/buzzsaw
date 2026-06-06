@@ -12,8 +12,5 @@
     "plugin:import/electron",
     "plugin:import/typescript"
   ],
-  "parser": "@typescript-eslint/parser",
-  "settings": {
-    "import/core-modules": ["vitest/config"]
-  }
+  "parser": "@typescript-eslint/parser"
 }
