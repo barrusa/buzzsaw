@@ -4,11 +4,11 @@ import fs from 'fs';
 import HID from 'node-hid';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-// (Disabled to fix bundling issues on macOS)
-// if (require('electron-squirrel-startup')) {
-//   app.quit();
-// }
-
+if (process.platform === 'win32') {
+  if (require('electron-squirrel-startup')) {
+    app.quit();
+  }
+}
 // --- Persistence ---
 const DATA_PATH = path.join(app.getPath('userData'), 'buzzsaw-config.json');
 
@@ -37,14 +37,39 @@ let players: Player[] = [
   { id: 3, name: "Player 3", devicePath: null },
 ];
 
-const loadConfig = (): ConfigData | null => {
+const isValidWindowBounds = (bounds: unknown): bounds is WindowBounds => {
+  if (typeof bounds !== 'object' || bounds === null) return false;
+  const b = bounds as Record<string, unknown>;
+  return typeof b.x === 'number' && typeof b.y === 'number' && typeof b.width === 'number' && typeof b.height === 'number';
+};
+
+const isValidPlayer = (player: unknown): player is Player => {
+  if (typeof player !== 'object' || player === null) return false;
+  const p = player as Record<string, unknown>;
+  return typeof p.id === 'number' && typeof p.name === 'string' && (typeof p.devicePath === 'string' || p.devicePath === null);
+};
+
+const isValidConfigData = (data: unknown): data is ConfigData => {
+  if (typeof data !== 'object' || data === null) return false;
+  const d = data as Record<string, unknown>;
+  if (!Array.isArray(d.players)) return false;
+  if (!d.players.every(isValidPlayer)) return false;
+  if (d.hostBounds !== undefined && !isValidWindowBounds(d.hostBounds)) return false;
+  if (d.boardBounds !== undefined && !isValidWindowBounds(d.boardBounds)) return false;
+  return true;
+};
+
+export const loadConfig = (): ConfigData | null => {
   try {
     if (fs.existsSync(DATA_PATH)) {
       const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-      if (data.players) {
+      if (isValidConfigData(data)) {
         players = data.players;
+        return data;
+      } else {
+        console.error('Failed to load config: Invalid configuration format');
+        return null;
       }
-      return data;
     }
   } catch (e) {
     console.error('Failed to load config:', e);
@@ -52,7 +77,7 @@ const loadConfig = (): ConfigData | null => {
   return null;
 };
 
-const saveConfig = () => {
+export const saveConfig = () => {
   try {
     const config: ConfigData = {
       players,
@@ -77,13 +102,21 @@ interface Buzz {
   label: string;
 }
 
-let gameState: GameState = 'IDLE';
-let buzzQueue: Buzz[] = [];
-const earlyBuzzers: Set<number> = new Set();
-let floorOpenTime = 0;
+export let gameState: GameState = 'IDLE';
+export let buzzQueue: Buzz[] = [];
+export let earlyBuzzers: Set<number> = new Set();
+export let floorOpenTime = 0;
 let timerValue = 5;
 let timerInterval: NodeJS.Timeout | null = null;
 let calibrationTarget: number | null = null;
+
+// --- Expose for testing ---
+export const __setGameStateForTest = (state: GameState) => { gameState = state; };
+export const __setBuzzQueueForTest = (queue: Buzz[]) => { buzzQueue = queue; };
+export const __setEarlyBuzzersForTest = (buzzers: Set<number>) => { earlyBuzzers = buzzers; };
+export const __setFloorOpenTimeForTest = (time: number) => { floorOpenTime = time; };
+export const __getEarlyBuzzersForTest = () => { return earlyBuzzers; };
+export const __getBuzzQueueForTest = () => { return buzzQueue; };
 
 // Devices
 const VENDOR_ID = 0x0fc5;
@@ -103,6 +136,8 @@ const createMainWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -135,6 +170,8 @@ const createBoardWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -171,7 +208,8 @@ const broadcastState = () => {
 
 // --- Game Logic ---
 
-const handleBuzz = (playerId: number) => {
+
+export const handleBuzz = (playerId: number) => {
   const now = performance.now();
 
   if (gameState === 'IDLE') {
@@ -237,6 +275,7 @@ const forceQuit = () => {
 
 // --- IPC Handlers ---
 
+
 const startFloorTimer = () => {
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
@@ -255,6 +294,16 @@ const startFloorTimer = () => {
   }, 1000);
 };
 
+const resetGame = () => {
+  gameState = 'IDLE';
+  buzzQueue = [];
+  earlyBuzzers.clear();
+  timerValue = 5;
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  broadcastState();
+};
+
 ipcMain.on('open-floor', () => {
   gameState = 'OPEN';
   buzzQueue = [];
@@ -270,19 +319,22 @@ ipcMain.on('open-floor', () => {
 });
 
 ipcMain.on('reset-game', () => {
-  gameState = 'IDLE';
-  buzzQueue = [];
-  earlyBuzzers.clear();
-  timerValue = 5;
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = null;
-  broadcastState();
+  resetGame();
 });
 
-ipcMain.on('update-player-name', (event, { id, name }) => {
+ipcMain.on('update-player-name', (event, payload) => {
+  if (!payload || typeof payload !== 'object') return;
+  const { id, name } = payload;
+
+  // Validate id is a number and name is a string
+  if (typeof id !== 'number' || typeof name !== 'string') return;
+
+  // Basic string validation (length check)
+  const sanitizedName = name.trim().slice(0, 50);
+
   const p = players.find(player => player.id === id);
   if (p) {
-    p.name = name;
+    p.name = sanitizedName;
     saveConfig();
     broadcastState();
   }
@@ -308,10 +360,6 @@ ipcMain.on('open-board-window', () => {
 
 ipcMain.on('request-state', () => {
   broadcastState();
-});
-
-ipcMain.on('start-timer', () => {
-  // Placeholder for future timer start logic if needed
 });
 
 ipcMain.on('quit-app', () => {
@@ -391,13 +439,7 @@ app.on('ready', () => {
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
-    gameState = 'IDLE';
-    buzzQueue = [];
-    earlyBuzzers.clear();
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
-    broadcastState();
+    resetGame();
   });
 });
 
