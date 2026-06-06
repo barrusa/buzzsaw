@@ -1,5 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import TimerSection from './components/TimerSection';
+import StateText from './components/StateText';
+import PenaltyDisplay from './components/PenaltyDisplay';
+import BuzzQueueDisplay from './components/BuzzQueueDisplay';
 
 const useGameState = () => {
   const [state, setState] = useState<GameStateData>({
@@ -26,7 +30,7 @@ const useGameState = () => {
 const buzzAudio = new Audio('sounds/buzz.wav');
 const timeoutAudio = new Audio('sounds/timeout.mp3');
 
-const useAudio = (state: GameStateData) => {
+export const useAudio = (state: GameStateData) => {
   const prevQueueLen = useRef(0);
   const prevTimer = useRef(5);
 
@@ -104,7 +108,14 @@ const HostWindow = () => {
   const state = useGameState();
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
 
-  const getPlayerName = (id: number) => players.find(p => p.id === id)?.name || `Player ${id}`;
+  const playerMap = useMemo(() => {
+    return players.reduce((acc, p) => {
+      acc[p.id] = p.name;
+      return acc;
+    }, {} as Record<number, string>);
+  }, [players]);
+
+  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', maxWidth: 800, margin: '0 auto' }}>
@@ -208,14 +219,15 @@ const BoardWindow = () => {
   useAudio(state); 
   
   const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
-  const getPlayerName = (id: number) => players?.find(p => p.id === id)?.name || `Player ${id}`;
-  
-  const getMedal = (index: number) => {
-    if (index === 0) return '🥇';
-    if (index === 1) return '🥈';
-    if (index === 2) return '🥉';
-    return `#${index + 1}`;
-  };
+
+  const playerMap = useMemo(() => {
+    return (players || []).reduce((acc, p) => {
+      acc[p.id] = p.name;
+      return acc;
+    }, {} as Record<number, string>);
+  }, [players]);
+
+  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
 
   return (
     <div style={{ 
@@ -230,74 +242,9 @@ const BoardWindow = () => {
       overflow: 'hidden',
       textTransform: 'uppercase' /* Category header style */
     }}>
-      {/* Timer Section - Adjusted size and margin to prevent overlap */}
-      <div style={{ 
-        marginTop: 0,
-        backgroundColor: gameState === 'OPEN' ? '#00b300' : 'transparent',
-        padding: '20px 0',
-        borderRadius: 20,
-        transition: 'all 0.2s ease-in-out',
-        width: '100%',
-        maxWidth: 900,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 30,
-        boxSizing: 'border-box',
-        minHeight: 160
-      }}>
-        {/* Segmented Countdown Bar */}
-        <div style={{ display: 'flex', gap: 15 }}>
-          {[1, 2, 3, 4, 5].map((seg) => {
-            const isActive = timer >= seg;
-            return (
-              <div 
-                key={seg}
-                style={{
-                  width: 60,
-                  height: 100,
-                  backgroundColor: isActive 
-                    ? (gameState === 'OPEN' ? '#ffffff' : '#aaaaaa') 
-                    : 'rgba(0,0,0,0.3)',
-                  border: '4px solid #000',
-                  borderRadius: 4,
-                  boxShadow: isActive ? '0 0 20px rgba(255,255,255,0.5), inset 0 0 10px rgba(0,0,0,0.2)' : 'none',
-                  transition: 'all 0.1s ease-in-out'
-                }}
-              />
-            );
-          })}
-        </div>
+      <TimerSection timer={timer} gameState={gameState} />
 
-        {/* Numeric Timer */}
-        <div style={{ 
-          fontSize: '8rem', 
-          fontWeight: 'bold', 
-          lineHeight: 1,
-          fontFamily: "'Oswald', sans-serif",
-          color: timer === 0 ? '#ff4444' : (gameState === 'OPEN' ? '#ffffff' : '#aaaaaa'),
-          textShadow: '4px 4px 0px #000000',
-          minWidth: '100px',
-          textAlign: 'left',
-          marginTop: '-0.1em' // Minor visual tweak to center baseline/cap-height
-        }}>
-          {timer}
-        </div>
-      </div>
-
-      {/* State Text - Positioned clearly below timer */}
-      <div style={{ 
-        fontSize: '1.5rem', 
-        marginBottom: 10,
-        fontWeight: 'bold',
-        letterSpacing: '0.1em',
-        color: gameState === 'OPEN' ? '#44ff44' : (gameState === 'LOCKED' ? '#ff4444' : '#8888ff'),
-        textShadow: '2px 2px 0px #000000',
-        textAlign: 'center',
-        width: '100%'
-      }}>
-        {gameState === 'IDLE' ? 'READY' : gameState}
-      </div>
+      <StateText gameState={gameState} />
       
       <style>{`
         @keyframes winnerPulse {
@@ -309,87 +256,9 @@ const BoardWindow = () => {
 
       <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
-        {/* Penalty / Early Buzzers Display */}
-        {earlyBuzzers.filter(pid => !buzzQueue.some(b => b.player === pid)).map(pid => (
-           <div key={`penalty-${pid}`} style={{ 
-             display: 'flex', 
-             justifyContent: 'space-between',
-             alignItems: 'center',
-             padding: '10px 30px',
-             width: '100%',
-             marginBottom: 5,
-             fontSize: '1.8rem',
-             backgroundColor: '#ff0000',
-             border: '2px solid #ff4444',
-             textShadow: '2px 2px 0px #000000',
-             animation: 'shake 0.5s', // Optional visual flair
-             boxSizing: 'border-box'
-           }}>
-             <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-               <span style={{ fontSize: '2rem', width: 50, textAlign: 'center' }}>⚠️</span>
-               <span>{getPlayerName(pid)}</span>
-             </div>
-             <span style={{ opacity: 0.9, fontFamily: "'Oswald', sans-serif" }}>LOCKED</span>
-           </div>
-        ))}
+        <PenaltyDisplay earlyBuzzers={earlyBuzzers} buzzQueue={buzzQueue} getPlayerName={getPlayerName} />
 
-        {buzzQueue.length > 0 && (
-          <div style={{ 
-            backgroundColor: '#0000cc', 
-            border: '4px solid #ffffff',
-            padding: '15px 30px', 
-            marginBottom: 10,
-            textAlign: 'center',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-            width: '100%',
-            boxSizing: 'border-box',
-            animation: 'winnerPulse 2s infinite ease-in-out'
-          }}>
-            <div style={{ 
-              fontSize: '3.5rem', 
-              margin: '0',
-              textShadow: '3px 3px 0px #000000',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-               <span>🚨</span>
-               <span style={{ fontWeight: 'bold', flex: 1, textAlign: 'center' }}>{getPlayerName(buzzQueue[0].player)}</span>
-               <span>🚨</span>
-            </div>
-          </div>
-        )}
-
-        <div style={{ 
-          backgroundColor: 'rgba(0,0,0,0.3)', 
-          border: '2px solid #ffffff',
-          width: '100%',
-          maxHeight: '300px', // Capping height to prevent long empty area
-          overflow: 'hidden',
-          boxSizing: 'border-box'
-        }}>
-          {buzzQueue.slice(0, 3).map((b, i) => (
-             <div key={i} style={{ 
-               display: 'flex', 
-               justifyContent: 'space-between',
-               alignItems: 'center',
-               padding: '10px 30px',
-               borderBottom: i < 2 && i < buzzQueue.length - 1 ? '2px solid rgba(255,255,255,0.1)' : 'none',
-               fontSize: '1.8rem',
-               backgroundColor: i === 0 ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-               textShadow: '2px 2px 0px #000000',
-               boxSizing: 'border-box'
-             }}>
-               <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-                 <span style={{ fontSize: '2rem', width: 50, textAlign: 'center' }}>{getMedal(i)}</span>
-                 <span>{getPlayerName(b.player)}</span>
-               </div>
-               <span style={{ opacity: 0.9, fontFamily: "'Oswald', sans-serif" }}>
-                 {b.label}
-               </span>
-             </div>
-          ))}
-        </div>
+        <BuzzQueueDisplay buzzQueue={buzzQueue} getPlayerName={getPlayerName} />
       </div>
     </div>
   );
