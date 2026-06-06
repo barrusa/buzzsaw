@@ -1,0 +1,165 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+vi.mock('electron', () => {
+  return {
+    app: {
+      getPath: vi.fn().mockReturnValue('/mock/path'),
+      on: vi.fn(),
+      quit: vi.fn()
+    },
+    BrowserWindow: vi.fn(),
+    ipcMain: { on: vi.fn() },
+    globalShortcut: { register: vi.fn() }
+  };
+});
+
+// Mock fs to avoid errors when loading/saving config
+vi.mock('fs', () => {
+  return {
+    default: {
+      existsSync: vi.fn().mockReturnValue(false),
+      readFileSync: vi.fn(),
+      writeFileSync: vi.fn()
+    }
+  };
+});
+
+// Mock node-hid
+vi.mock('node-hid', () => {
+  return {
+    default: {
+      devices: vi.fn().mockReturnValue([]),
+      HID: vi.fn()
+    }
+  };
+});
+
+import {
+  handleBuzz,
+  buzzQueue,
+  earlyBuzzers,
+  __setGameStateForTest,
+  __setBuzzQueueForTest,
+  __setEarlyBuzzersForTest,
+  __setFloorOpenTimeForTest
+} from '../main.ts';
+
+describe('handleBuzz', () => {
+  beforeEach(() => {
+    // Reset state before each test
+    __setGameStateForTest('IDLE');
+    __setBuzzQueueForTest([]);
+    __setEarlyBuzzersForTest(new Set());
+    __setFloorOpenTimeForTest(0);
+
+    // Mock performance.now
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('when gameState is IDLE', () => {
+    it('should add player to earlyBuzzers if not already present', () => {
+      handleBuzz(1);
+
+      expect(earlyBuzzers.has(1)).toBe(true);
+    });
+
+    it('should not do anything if player is already in earlyBuzzers', () => {
+      __setEarlyBuzzersForTest(new Set([1]));
+
+      // Store size before
+      const sizeBefore = earlyBuzzers.size;
+
+      handleBuzz(1);
+
+      // Should still be just player 1
+      expect(earlyBuzzers.size).toBe(sizeBefore);
+      expect(earlyBuzzers.has(1)).toBe(true);
+    });
+  });
+
+  describe('when gameState is OPEN', () => {
+    beforeEach(() => {
+      __setGameStateForTest('OPEN');
+      __setFloorOpenTimeForTest(800); // 1000 - 800 = 200 (within 250ms penalty window)
+    });
+
+    it('should ignore buzz if player is in earlyBuzzers and within penalty window', () => {
+      __setEarlyBuzzersForTest(new Set([1]));
+      // penalty unlock time = floorOpenTime (800) + 250 = 1050
+      // now = 1000
+
+      handleBuzz(1);
+
+      expect(buzzQueue.length).toBe(0);
+    });
+
+    it('should process buzz if player is in earlyBuzzers but penalty window has passed', () => {
+      __setEarlyBuzzersForTest(new Set([1]));
+      __setFloorOpenTimeForTest(700); // penalty unlock time = 700 + 250 = 950. now = 1000.
+
+      handleBuzz(1);
+
+      expect(buzzQueue.length).toBe(1);
+      expect(buzzQueue[0].player).toBe(1);
+    });
+
+    it('should not add to buzzQueue if player already in buzzQueue', () => {
+      __setBuzzQueueForTest([{
+        player: 1,
+        timestamp: 900,
+        delta: 0,
+        label: ''
+      }]);
+
+      handleBuzz(1);
+
+      expect(buzzQueue.length).toBe(1); // Still 1
+    });
+
+    it('should add first player to buzzQueue with delta 0 and empty label', () => {
+      handleBuzz(1);
+
+      expect(buzzQueue.length).toBe(1);
+      expect(buzzQueue[0]).toEqual({
+        player: 1,
+        timestamp: 1000,
+        delta: 0,
+        label: ''
+      });
+    });
+
+    it('should add subsequent players to buzzQueue with calculated delta and label', () => {
+      __setBuzzQueueForTest([{
+        player: 2,
+        timestamp: 900,
+        delta: 0,
+        label: ''
+      }]);
+
+      handleBuzz(1);
+
+      expect(buzzQueue.length).toBe(2);
+      expect(buzzQueue[1]).toEqual({
+        player: 1,
+        timestamp: 1000,
+        delta: 100, // 1000 - 900
+        label: '+100 MS'
+      });
+    });
+  });
+
+  describe('when gameState is LOCKED', () => {
+    it('should not modify any state', () => {
+      __setGameStateForTest('LOCKED');
+
+      handleBuzz(1);
+
+      expect(earlyBuzzers.size).toBe(0);
+      expect(buzzQueue.length).toBe(0);
+    });
+  });
+});
