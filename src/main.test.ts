@@ -67,11 +67,9 @@ describe('saveConfig', () => {
     consoleErrorSpy.mockRestore();
   });
 });
-
 describe('loadConfig', () => {
   const MOCK_DATA_PATH = path.join('/mocked/user/data/path', 'buzzsaw-config.json');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let consoleErrorSpy: any;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
