@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface PenaltyDisplayProps {
   earlyBuzzers: number[];
@@ -7,11 +7,11 @@ interface PenaltyDisplayProps {
 }
 
 const PenaltyDisplay: React.FC<PenaltyDisplayProps> = ({ earlyBuzzers, buzzQueue, getPlayerName }) => {
-  const buzzQueuePlayerIds = new Set(buzzQueue.map(b => b.player));
+  const buzzedPlayerIds = useMemo(() => new Set(buzzQueue.map(b => b.player)), [buzzQueue]);
 
   return (
     <>
-      {earlyBuzzers.filter(pid => !buzzQueuePlayerIds.has(pid)).map(pid => (
+      {earlyBuzzers.filter(pid => !buzzedPlayerIds.has(pid)).map(pid => (
          <div key={`penalty-${pid}`} style={{
            display: 'flex',
            justifyContent: 'space-between',
