@@ -212,15 +212,16 @@ const HostWindow = () => {
       </div>
     </div>
   );
+
+
 };
 
 const BoardWindow = () => {
   const state = useGameState();
   useAudio(state); 
   
-  const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
 
-<<<<<<< Updated upstream
+  const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
   const playerMap = useMemo(() => {
     return (players || []).reduce((acc, p) => {
       acc[p.id] = p.name;
@@ -230,10 +231,6 @@ const BoardWindow = () => {
 
   const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
 
-=======
-  const buzzQueuePlayerIds = new Set(buzzQueue.map(b => b.player));
-
->>>>>>> Stashed changes
   return (
     <div style={{ 
       padding: 20, 
@@ -261,33 +258,6 @@ const BoardWindow = () => {
 
       <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
-<<<<<<< Updated upstream
-        <PenaltyDisplay earlyBuzzers={earlyBuzzers} buzzQueue={buzzQueue} getPlayerName={getPlayerName} />
-=======
-        {/* Penalty / Early Buzzers Display */}
-        {earlyBuzzers.filter(pid => !buzzQueuePlayerIds.has(pid)).map(pid => (
-           <div key={`penalty-${pid}`} style={{
-             display: 'flex',
-             justifyContent: 'space-between',
-             alignItems: 'center',
-             padding: '10px 30px',
-             width: '100%',
-             marginBottom: 5,
-             fontSize: '1.8rem',
-             backgroundColor: '#ff0000',
-             border: '2px solid #ff4444',
-             textShadow: '2px 2px 0px #000000',
-             animation: 'shake 0.5s', // Optional visual flair
-             boxSizing: 'border-box'
-           }}>
-             <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-               <span style={{ fontSize: '2rem', width: 50, textAlign: 'center' }}>⚠️</span>
-               <span>{getPlayerName(pid)}</span>
-             </div>
-             <span style={{ opacity: 0.9, fontFamily: "'Oswald', sans-serif" }}>LOCKED</span>
-           </div>
-        ))}
->>>>>>> Stashed changes
 
         <BuzzQueueDisplay buzzQueue={buzzQueue} getPlayerName={getPlayerName} />
       </div>
