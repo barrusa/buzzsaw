@@ -143,6 +143,8 @@ const createMainWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -175,6 +177,8 @@ const createBoardWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -279,6 +283,16 @@ const forceQuit = () => {
 
 // --- IPC Handlers ---
 
+const resetGame = () => {
+  gameState = 'IDLE';
+  buzzQueue = [];
+  earlyBuzzers.clear();
+  timerValue = 5;
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  broadcastState();
+};
+
 ipcMain.on('open-floor', () => {
   gameState = 'OPEN';
   buzzQueue = [];
@@ -308,19 +322,22 @@ ipcMain.on('open-floor', () => {
 });
 
 ipcMain.on('reset-game', () => {
-  gameState = 'IDLE';
-  buzzQueue = [];
-  earlyBuzzers.clear();
-  timerValue = 5;
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = null;
-  broadcastState();
+  resetGame();
 });
 
-ipcMain.on('update-player-name', (event, { id, name }) => {
+ipcMain.on('update-player-name', (event, payload) => {
+  if (!payload || typeof payload !== 'object') return;
+  const { id, name } = payload;
+
+  // Validate id is a number and name is a string
+  if (typeof id !== 'number' || typeof name !== 'string') return;
+
+  // Basic string validation (length check)
+  const sanitizedName = name.trim().slice(0, 50);
+
   const p = players.find(player => player.id === id);
   if (p) {
-    p.name = name;
+    p.name = sanitizedName;
     saveConfig();
     broadcastState();
   }
@@ -437,13 +454,7 @@ app.on('ready', () => {
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
-    gameState = 'IDLE';
-    buzzQueue = [];
-    earlyBuzzers.clear();
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
-    broadcastState();
+    resetGame();
   });
 });
 
