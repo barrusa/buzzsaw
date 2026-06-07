@@ -228,7 +228,7 @@ const BoardWindow = () => {
   }, [players]);
 
   const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
-  
+
   return (
     <div style={{ 
       padding: 20, 
