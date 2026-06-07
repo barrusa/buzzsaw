@@ -39,10 +39,16 @@ vi.mock('fs', () => ({
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
     writeFileSync: vi.fn(),
+    promises: {
+      writeFile: vi.fn().mockResolvedValue(undefined)
+    }
   },
   existsSync: vi.fn(),
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
+  promises: {
+    writeFile: vi.fn().mockResolvedValue(undefined)
+  }
 }));
 
 describe('saveConfig', () => {
@@ -61,22 +67,20 @@ describe('saveConfig', () => {
     consoleLogSpy.mockRestore();
   });
 
-  it('should successfully save config and log', () => {
-    saveConfig();
+  it('should successfully save config and log', async () => {
+    await saveConfig();
 
-    expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(fs.promises.writeFile).toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalledWith('Saved config to', MOCK_DATA_PATH);
   });
 
-  it('should catch errors and log them when fs.writeFileSync fails', () => {
+  it('should catch and log errors thrown by fs.promises.writeFile', async () => {
     const mockError = new Error('Disk full');
-    vi.mocked(fs.writeFileSync).mockImplementation(() => {
-      throw mockError;
-    });
+    (fs.promises.writeFile as any).mockRejectedValueOnce(mockError);
 
-    saveConfig();
+    await saveConfig();
 
-    expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(fs.promises.writeFile).toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', mockError);
   });
 });

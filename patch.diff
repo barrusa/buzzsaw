@@ -1,0 +1,52 @@
+--- src/main.test.ts
++++ src/main.test.ts
+@@ -62,35 +62,17 @@
+     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+   });
+
+-<<<<<<< HEAD
+   afterEach(() => {
+     consoleErrorSpy.mockRestore();
+     consoleLogSpy.mockRestore();
+   });
+-=======
+-  it('should catch and log errors thrown by fs.promises.writeFile', async () => {
+-    const error = new Error('Disk full');
+-    (fs.promises.writeFile as any).mockRejectedValueOnce(error);
+->>>>>>> origin/main
+
+-  it('should successfully save config and log', () => {
+-    saveConfig();
+-
+-    expect(fs.writeFileSync).toHaveBeenCalled();
+-    expect(consoleLogSpy).toHaveBeenCalledWith('Saved config to', MOCK_DATA_PATH);
+-  });
+-
+-  it('should catch errors and log them when fs.writeFileSync fails', () => {
++  it('should catch and log errors thrown by fs.promises.writeFile', async () => {
+     const mockError = new Error('Disk full');
+-    vi.mocked(fs.writeFileSync).mockImplementation(() => {
+-      throw mockError;
+-    });
++    (fs.promises.writeFile as any).mockRejectedValueOnce(mockError);
+
+     await saveConfig();
+
+-<<<<<<< HEAD
+-    expect(fs.writeFileSync).toHaveBeenCalled();
+-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', mockError);
+-=======
+     expect(fs.promises.writeFile).toHaveBeenCalled();
+-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', error);
+-    consoleErrorSpy.mockRestore();
+->>>>>>> origin/main
++    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', mockError);
+   });
++
++  it('should successfully save config and log', async () => {
++    await saveConfig();
++
++    expect(fs.promises.writeFile).toHaveBeenCalled();
++    expect(consoleLogSpy).toHaveBeenCalledWith('Saved config to', MOCK_DATA_PATH);
++  });
+ });
