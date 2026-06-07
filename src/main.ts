@@ -319,6 +319,8 @@ ipcMain.on('reset-game', () => {
 ipcMain.on('update-player-name', (event, payload) => {
   if (!payload || typeof payload !== 'object') return;
   const { id, name } = payload;
+  if (typeof id !== 'number' || typeof name !== 'string') return;
+
   // Basic string validation (length check)
   const sanitizedName = name.trim().slice(0, 50);
 
