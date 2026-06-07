@@ -77,18 +77,23 @@ export const loadConfig = (): ConfigData | null => {
   return null;
 };
 
+let savePromise = Promise.resolve();
 export const saveConfig = () => {
-  try {
-    const config: ConfigData = {
-      players,
-      hostBounds: mainWindow?.getBounds(),
-      boardBounds: boardWindow?.getBounds(),
-    };
-    fs.writeFileSync(DATA_PATH, JSON.stringify(config, null, 2));
+  const config: ConfigData = {
+    players,
+    hostBounds: mainWindow?.getBounds(),
+    boardBounds: boardWindow?.getBounds(),
+  };
+
+  const data = JSON.stringify(config, null, 2);
+
+  savePromise = savePromise.then(() => fs.promises.writeFile(DATA_PATH, data)).then(() => {
     console.log('Saved config to', DATA_PATH);
-  } catch (e) {
+  }).catch((e) => {
     console.error('Failed to save config:', e);
-  }
+  });
+
+  return savePromise;
 };
 
 // --- Game State & Logic ---
@@ -136,6 +141,8 @@ const createMainWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -168,6 +175,8 @@ const createBoardWindow = (bounds?: WindowBounds) => {
     y: bounds?.y,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -263,8 +272,8 @@ const handleDeviceInput = (devicePath: string) => {
 };
 
 // --- Helper: Force Quit ---
-const forceQuit = () => {
-  saveConfig();
+const forceQuit = async () => {
+  await saveConfig();
   // Nuclear option: Kill the process to prevent node-hid hangs
   process.kill(process.pid, 'SIGKILL');
 };
@@ -313,10 +322,19 @@ ipcMain.on('reset-game', () => {
   resetGame();
 });
 
-ipcMain.on('update-player-name', (event, { id, name }) => {
+ipcMain.on('update-player-name', (event, payload) => {
+  if (!payload || typeof payload !== 'object') return;
+  const { id, name } = payload;
+
+  // Validate id is a number and name is a string
+  if (typeof id !== 'number' || typeof name !== 'string') return;
+
+  // Basic string validation (length check)
+  const sanitizedName = name.trim().slice(0, 50);
+
   const p = players.find(player => player.id === id);
   if (p) {
-    p.name = name;
+    p.name = sanitizedName;
     saveConfig();
     broadcastState();
   }
