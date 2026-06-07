@@ -77,18 +77,23 @@ export const loadConfig = (): ConfigData | null => {
   return null;
 };
 
+let savePromise = Promise.resolve();
 export const saveConfig = () => {
-  try {
-    const config: ConfigData = {
-      players,
-      hostBounds: mainWindow?.getBounds(),
-      boardBounds: boardWindow?.getBounds(),
-    };
-    fs.writeFileSync(DATA_PATH, JSON.stringify(config, null, 2));
+  const config: ConfigData = {
+    players,
+    hostBounds: mainWindow?.getBounds(),
+    boardBounds: boardWindow?.getBounds(),
+  };
+
+  const data = JSON.stringify(config, null, 2);
+
+  savePromise = savePromise.then(() => fs.promises.writeFile(DATA_PATH, data)).then(() => {
     console.log('Saved config to', DATA_PATH);
-  } catch (e) {
+  }).catch((e) => {
     console.error('Failed to save config:', e);
-  }
+  });
+
+  return savePromise;
 };
 
 // --- Game State & Logic ---
@@ -267,8 +272,8 @@ const handleDeviceInput = (devicePath: string) => {
 };
 
 // --- Helper: Force Quit ---
-const forceQuit = () => {
-  saveConfig();
+const forceQuit = async () => {
+  await saveConfig();
   // Nuclear option: Kill the process to prevent node-hid hangs
   process.kill(process.pid, 'SIGKILL');
 };
