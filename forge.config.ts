@@ -7,6 +7,8 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
+import fs from 'fs';
+import path from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -15,6 +17,25 @@ const config: ForgeConfig = {
     },
   },
   rebuildConfig: {},
+  hooks: {
+    packageAfterPrune: async (forgeConfig, buildPath) => {
+      const targetNodeModules = path.join(buildPath, 'node_modules');
+      if (!fs.existsSync(targetNodeModules)) {
+        fs.mkdirSync(targetNodeModules, { recursive: true });
+      }
+
+      const copyModule = (moduleName: string) => {
+        const src = path.join(process.cwd(), 'node_modules', moduleName);
+        const dest = path.join(targetNodeModules, moduleName);
+        if (fs.existsSync(src)) {
+          fs.cpSync(src, dest, { recursive: true });
+        }
+      };
+
+      copyModule('node-hid');
+      copyModule('pkg-prebuilds');
+    },
+  },
   makers: [
     new MakerSquirrel({}),
     new MakerZIP({}, ['darwin']),
