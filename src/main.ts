@@ -61,12 +61,6 @@ const isValidConfigData = (data: unknown): data is ConfigData => {
 
 export const loadConfig = async (): Promise<ConfigData | null> => {
   try {
-    try {
-      await fs.promises.access(DATA_PATH);
-    } catch {
-      return null;
-    }
-    
     const fileContent = await fs.promises.readFile(DATA_PATH, 'utf-8');
     const data = JSON.parse(fileContent);
     if (isValidConfigData(data)) {
@@ -76,7 +70,11 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
       console.error('Failed to load config: Invalid configuration format');
       return null;
     }
-  } catch (e) {
+  } catch (e: any) {
+    if (e.code === 'ENOENT') {
+      // File does not exist, not an error
+      return null;
+    }
     console.error('Failed to load config:', e);
   }
   return null;

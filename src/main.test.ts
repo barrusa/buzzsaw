@@ -91,12 +91,13 @@ describe('loadConfig', () => {
   });
 
   it('should return null when the config file does not exist', async () => {
-    vi.mocked(fs.promises.access).mockRejectedValueOnce(new Error('File not found'));
+    const error: any = new Error('ENOENT: no such file or directory');
+    error.code = 'ENOENT';
+    vi.mocked(fs.promises.readFile).mockRejectedValueOnce(error);
 
     const result = await loadConfig();
 
-    expect(fs.promises.access).toHaveBeenCalledWith(MOCK_DATA_PATH);
-    expect(fs.promises.readFile).not.toHaveBeenCalled();
+    expect(fs.promises.readFile).toHaveBeenCalledWith(MOCK_DATA_PATH, 'utf-8');
     expect(result).toBeNull();
   });
 
@@ -108,12 +109,10 @@ describe('loadConfig', () => {
       hostBounds: { x: 0, y: 0, width: 800, height: 600 }
     };
 
-    vi.mocked(fs.promises.access).mockResolvedValueOnce(undefined);
     vi.mocked(fs.promises.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig));
 
     const result = await loadConfig();
 
-    expect(fs.promises.access).toHaveBeenCalledWith(MOCK_DATA_PATH);
     expect(fs.promises.readFile).toHaveBeenCalledWith(MOCK_DATA_PATH, 'utf-8');
     expect(result).toEqual(mockConfig);
   });
@@ -123,7 +122,6 @@ describe('loadConfig', () => {
       hostBounds: { x: 0, y: 0, width: 800, height: 600 }
     };
 
-    vi.mocked(fs.promises.access).mockResolvedValueOnce(undefined);
     vi.mocked(fs.promises.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig));
 
     const result = await loadConfig();
@@ -139,7 +137,6 @@ describe('loadConfig', () => {
       ]
     };
 
-    vi.mocked(fs.promises.access).mockResolvedValueOnce(undefined);
     vi.mocked(fs.promises.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig));
 
     const result = await loadConfig();
@@ -149,7 +146,6 @@ describe('loadConfig', () => {
   });
 
   it('should catch errors, log them, and return null on invalid JSON', async () => {
-    vi.mocked(fs.promises.access).mockResolvedValueOnce(undefined);
     vi.mocked(fs.promises.readFile).mockResolvedValueOnce('invalid-json');
 
     const result = await loadConfig();
