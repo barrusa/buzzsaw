@@ -290,7 +290,7 @@ const resetGame = () => {
   broadcastState();
 };
 
-ipcMain.on('open-floor', () => {
+export const openFloor = () => {
   gameState = 'OPEN';
   buzzQueue = [];
   floorOpenTime = performance.now();
@@ -316,6 +316,10 @@ ipcMain.on('open-floor', () => {
     }
     broadcastState();
   }, 1000);
+};
+
+ipcMain.on('open-floor', () => {
+  openFloor();
 });
 
 ipcMain.on('reset-game', () => {
@@ -425,29 +429,7 @@ app.on('ready', () => {
   initHID();
 
   globalShortcut.register('CommandOrControl+Shift+O', () => {
-    gameState = 'OPEN';
-    buzzQueue = [];
-    floorOpenTime = performance.now();
-    
-    // Clear early buzzers after penalty time
-    setTimeout(() => {
-      earlyBuzzers.clear();
-      broadcastState();
-    }, 250);
-
-    timerValue = 5;
-    if (timerInterval) clearInterval(timerInterval);
-    broadcastState(); 
-    timerInterval = setInterval(() => {
-      timerValue -= 1;
-      if (timerValue <= 0) {
-        timerValue = 0;
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = null;
-        gameState = 'LOCKED';
-      }
-      broadcastState();
-    }, 1000);
+    openFloor();
   });
 
   globalShortcut.register('CommandOrControl+Shift+R', () => {
