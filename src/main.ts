@@ -235,7 +235,7 @@ export const handleBuzz = (playerId: number) => {
       }
     }
 
-    if (buzzQueue.find(b => b.player === playerId)) return;
+    if (buzzQueue.some(b => b.player === playerId)) return;
 
     const isFirst = buzzQueue.length === 0;
     const delta = isFirst ? 0 : now - buzzQueue[0].timestamp;
