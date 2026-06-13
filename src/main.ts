@@ -334,7 +334,7 @@ ipcMain.on('reset-game', () => {
 });
 
 ipcMain.on('update-player-name', (event, payload) => {
-  if (!payload || typeof payload !== 'object') return;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
   const { id, name } = payload;
 
   // Validate id is a number and name is a string
@@ -352,6 +352,7 @@ ipcMain.on('update-player-name', (event, payload) => {
 });
 
 ipcMain.on('start-calibration', (event, playerId) => {
+  if (typeof playerId !== 'number') return;
   calibrationTarget = playerId;
   broadcastState();
 });
@@ -362,6 +363,7 @@ ipcMain.on('cancel-calibration', () => {
 });
 
 ipcMain.on('simulate-buzz', (event, playerId) => {
+  if (typeof playerId !== 'number') return;
   handleBuzz(playerId);
 });
 
