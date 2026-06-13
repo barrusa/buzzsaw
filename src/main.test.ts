@@ -60,17 +60,19 @@ describe('saveConfig', () => {
     vi.clearAllMocks();
   });
 
-  it('should catch and log errors thrown by fs.promises.writeFile', async () => {
+  it('should catch and log errors thrown by fs.writeFileSync', () => {
     const error = new Error('Disk full');
-    (fs.promises.writeFile as any).mockRejectedValueOnce(error);
+    (fs.writeFileSync as any).mockImplementationOnce(() => {
+      throw error;
+    });
 
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
       // Mock implementation to prevent actual console.error output during testing
     });
 
-    await saveConfig();
+    saveConfig();
 
-    expect(fs.promises.writeFile).toHaveBeenCalled();
+    expect(fs.writeFileSync).toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', error);
     consoleErrorSpy.mockRestore();
   });
