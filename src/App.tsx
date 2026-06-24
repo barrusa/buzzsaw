@@ -104,7 +104,7 @@ const PlayerSetup = ({ players, calibrationTarget }: { players: Player[], calibr
   );
 };
 
-const HostWindow = () => {
+export const HostWindow = () => {
   const state = useGameState();
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
 
