@@ -364,6 +364,7 @@ ipcMain.on('cancel-calibration', () => {
 
 ipcMain.on('simulate-buzz', (event, playerId) => {
   if (typeof playerId !== 'number') return;
+  if (!players.some(p => p.id === playerId)) return;
   handleBuzz(playerId);
 });
 
