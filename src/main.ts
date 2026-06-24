@@ -37,6 +37,18 @@ let players: Player[] = [
   { id: 3, name: "Player 3", devicePath: null },
 ];
 
+const deviceMap = new Map<string, Player>();
+
+const updateDeviceMap = () => {
+  deviceMap.clear();
+  for (const player of players) {
+    if (player.devicePath) {
+      deviceMap.set(player.devicePath, player);
+    }
+  }
+};
+updateDeviceMap();
+
 const isValidWindowBounds = (bounds: unknown): bounds is WindowBounds => {
   if (typeof bounds !== 'object' || bounds === null) return false;
   const b = bounds as Record<string, unknown>;
@@ -65,6 +77,7 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
     const data = JSON.parse(fileContent);
     if (isValidConfigData(data)) {
       players = data.players;
+      updateDeviceMap();
       return data;
     } else {
       console.error('Failed to load config: Invalid configuration format');
@@ -264,6 +277,7 @@ const handleDeviceInput = (devicePath: string) => {
     if (player) {
       players.forEach(p => { if (p.devicePath === devicePath) p.devicePath = null; });
       player.devicePath = devicePath;
+      updateDeviceMap();
       console.log(`Mapped device ${devicePath} to Player ${player.id}`);
       saveConfig();
     }
@@ -272,7 +286,7 @@ const handleDeviceInput = (devicePath: string) => {
     return;
   }
 
-  const player = players.find(p => p.devicePath === devicePath);
+  const player = deviceMap.get(devicePath);
   if (player) {
     handleBuzz(player.id);
   }
