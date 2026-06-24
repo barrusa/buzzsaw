@@ -83,7 +83,7 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
   });
 
   afterEach(() => {
@@ -174,7 +174,7 @@ describe('handleBuzz', () => {
   });
 
   it('should add player to earlyBuzzers and trigger broadcast if buzzing in IDLE state', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { /* noop */ });
     __setGameStateForTest('IDLE');
 
     handleBuzz(1);
@@ -188,7 +188,7 @@ describe('handleBuzz', () => {
   });
 
   it('should not add to earlyBuzzers again if player already buzzed early in IDLE state', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { /* noop */ });
     __setGameStateForTest('IDLE');
     __getEarlyBuzzersForTest().add(1);
 

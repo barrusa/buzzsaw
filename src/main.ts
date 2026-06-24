@@ -406,9 +406,6 @@ const initHID = () => {
           let lastState = false;
 
           device.on('data', (data) => {
-             if (calibrationTarget !== null) {
-               console.log(`[HID ${d.path}] Data:`, data.toString('hex'));
-             }
              // Byte 3 check (from previous success)
              const pressed = data.length > 3 && data[3] > 0;
              if (pressed && !lastState && d.path) {
