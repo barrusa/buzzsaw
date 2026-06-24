@@ -229,7 +229,7 @@ const HostWindow = () => {
   );
 };
 
-const BoardWindow = () => {
+export const BoardWindow = () => {
   const state = useGameState();
   useAudio(state); 
   
