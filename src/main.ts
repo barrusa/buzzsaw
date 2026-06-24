@@ -391,7 +391,7 @@ const initHID = () => {
           uniquePaths.add(d.path);
           return true;
       });
-  
+      
       uniqueDelcoms.forEach((d) => {
         if (!d.path) return;
         try {
