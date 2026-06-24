@@ -83,6 +83,7 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -174,6 +175,7 @@ describe('handleBuzz', () => {
   });
 
   it('should add player to earlyBuzzers and trigger broadcast if buzzing in IDLE state', () => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     __setGameStateForTest('IDLE');
 
@@ -188,6 +190,7 @@ describe('handleBuzz', () => {
   });
 
   it('should not add to earlyBuzzers again if player already buzzed early in IDLE state', () => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     __setGameStateForTest('IDLE');
     __getEarlyBuzzersForTest().add(1);
