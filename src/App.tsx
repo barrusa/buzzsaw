@@ -204,7 +204,7 @@ const ManualSimulation = ({ getPlayerName }: { getPlayerName: (id: number) => st
   </div>
 );
 
-const HostWindow = () => {
+export const HostWindow = () => {
   const state = useGameState();
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
 
