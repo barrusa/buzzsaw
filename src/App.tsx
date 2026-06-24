@@ -54,7 +54,7 @@ export const useAudio = (state: GameStateData) => {
 
 // --- Components ---
 
-const PlayerSetup = ({ players, calibrationTarget }: { players: Player[], calibrationTarget: number | null }) => {
+export const PlayerSetup = ({ players, calibrationTarget }: { players: Player[], calibrationTarget: number | null }) => {
   return (
     <div style={{ marginBottom: 20, padding: 15, border: '1px solid #ddd', borderRadius: 8, backgroundColor: '#f9f9f9' }}>
       <h3>Player Setup & Buzzer Mapping</h3>
