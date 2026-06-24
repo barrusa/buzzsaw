@@ -38,11 +38,46 @@ import {
   handleBuzz,
   buzzQueue,
   earlyBuzzers,
+  gameState,
+  floorOpenTime,
   __setGameStateForTest,
   __setBuzzQueueForTest,
   __setEarlyBuzzersForTest,
-  __setFloorOpenTimeForTest
+  __setFloorOpenTimeForTest,
+  __getEarlyBuzzersForTest,
+  __getBuzzQueueForTest
 } from '../main.ts';
+
+describe('Test Utilities', () => {
+  it('should set and get gameState', () => {
+    __setGameStateForTest('LOCKED');
+    expect(gameState).toBe('LOCKED');
+    __setGameStateForTest('OPEN');
+    expect(gameState).toBe('OPEN');
+  });
+
+  it('should set and get buzzQueue', () => {
+    const mockQueue = [
+      { player: 1, timestamp: 100, delta: 0, label: '' },
+      { player: 2, timestamp: 200, delta: 100, label: '+100 MS' }
+    ];
+    __setBuzzQueueForTest(mockQueue);
+    expect(buzzQueue).toEqual(mockQueue);
+    expect(__getBuzzQueueForTest()).toEqual(mockQueue);
+  });
+
+  it('should set and get earlyBuzzers', () => {
+    const mockSet = new Set([1, 2, 3]);
+    __setEarlyBuzzersForTest(mockSet);
+    expect(earlyBuzzers).toEqual(mockSet);
+    expect(__getEarlyBuzzersForTest()).toEqual(mockSet);
+  });
+
+  it('should set and get floorOpenTime', () => {
+    __setFloorOpenTimeForTest(12345);
+    expect(floorOpenTime).toBe(12345);
+  });
+});
 
 describe('handleBuzz', () => {
   beforeEach(() => {
