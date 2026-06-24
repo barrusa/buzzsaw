@@ -70,7 +70,7 @@ describe('saveConfig', () => {
       // Mock implementation to prevent actual console.error output during testing
     });
 
-    saveConfig();
+    saveConfig(true);
 
     expect(fs.writeFileSync).toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', error);
@@ -83,7 +83,7 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* mock */ });
   });
 
   afterEach(() => {
@@ -174,7 +174,7 @@ describe('handleBuzz', () => {
   });
 
   it('should add player to earlyBuzzers and trigger broadcast if buzzing in IDLE state', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { /* mock */ });
     __setGameStateForTest('IDLE');
 
     handleBuzz(1);
@@ -188,7 +188,7 @@ describe('handleBuzz', () => {
   });
 
   it('should not add to earlyBuzzers again if player already buzzed early in IDLE state', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { /* mock */ });
     __setGameStateForTest('IDLE');
     __getEarlyBuzzersForTest().add(1);
 
