@@ -36,13 +36,77 @@ vi.mock('node-hid', () => {
 
 import {
   handleBuzz,
+  openFloor,
   buzzQueue,
   earlyBuzzers,
   __setGameStateForTest,
   __setBuzzQueueForTest,
   __setEarlyBuzzersForTest,
-  __setFloorOpenTimeForTest
+  __setFloorOpenTimeForTest,
+  __getTimerValueForTest,
+  __getTimerIntervalForTest,
+  __setTimerIntervalForTest,
+  __getGameStateForTest
 } from '../main.ts';
+
+describe('openFloor', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+    __setGameStateForTest('IDLE');
+    __setBuzzQueueForTest([{ player: 1, timestamp: 900, delta: 0, label: '' }]);
+    __setEarlyBuzzersForTest(new Set([1, 2]));
+    __setTimerIntervalForTest(null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('sets initial state correctly', () => {
+    openFloor();
+    expect(__getGameStateForTest()).toBe('OPEN');
+    expect(buzzQueue.length).toBe(0);
+    // floorOpenTime is not easily accessible but performance.now mock asserts it
+    expect(__getTimerValueForTest()).toBe(5);
+    expect(__getTimerIntervalForTest()).not.toBeNull();
+  });
+
+  it('clears early buzzers after penalty time', () => {
+    openFloor();
+    expect(earlyBuzzers.size).toBe(2);
+    vi.advanceTimersByTime(250);
+    expect(earlyBuzzers.size).toBe(0);
+  });
+
+  it('clears existing timerInterval', () => {
+    const mockInterval = setInterval(() => {}, 10000);
+    __setTimerIntervalForTest(mockInterval);
+
+    // In node, a timer object isn't strictly identical if cleared, but
+    // openFloor sets a new interval
+    openFloor();
+    const newInterval = __getTimerIntervalForTest();
+    expect(newInterval).not.toBe(mockInterval);
+    // clean up
+    clearInterval(mockInterval);
+  });
+
+  it('ticks down timer and locks game', () => {
+    openFloor();
+    expect(__getTimerValueForTest()).toBe(5);
+    expect(__getGameStateForTest()).toBe('OPEN');
+
+    vi.advanceTimersByTime(1000);
+    expect(__getTimerValueForTest()).toBe(4);
+
+    vi.advanceTimersByTime(4000);
+    expect(__getTimerValueForTest()).toBe(0);
+    expect(__getGameStateForTest()).toBe('LOCKED');
+    expect(__getTimerIntervalForTest()).toBeNull();
+  });
+});
 
 describe('handleBuzz', () => {
   beforeEach(() => {

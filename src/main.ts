@@ -123,6 +123,10 @@ export const __setEarlyBuzzersForTest = (buzzers: Set<number>) => { earlyBuzzers
 export const __setFloorOpenTimeForTest = (time: number) => { floorOpenTime = time; };
 export const __getEarlyBuzzersForTest = () => { return earlyBuzzers; };
 export const __getBuzzQueueForTest = () => { return buzzQueue; };
+export const __getTimerValueForTest = () => { return timerValue; };
+export const __getGameStateForTest = () => { return gameState; };
+export const __getTimerIntervalForTest = () => { return timerInterval; };
+export const __setTimerIntervalForTest = (interval: NodeJS.Timeout | null) => { timerInterval = interval; };
 
 // Devices
 const VENDOR_ID = 0x0fc5;
