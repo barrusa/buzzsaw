@@ -91,7 +91,6 @@ export const saveConfig = () => {
 
   try {
     fs.writeFileSync(DATA_PATH, data);
-    console.log('Saved config to', DATA_PATH);
   } catch (e) {
     console.error('Failed to save config:', e);
   }
@@ -226,7 +225,6 @@ export const handleBuzz = (playerId: number) => {
 
   if (gameState === 'IDLE') {
     if (!earlyBuzzers.has(playerId)) {
-      console.log(`Player ${playerId} buzzed early!`);
       earlyBuzzers.add(playerId);
       broadcastState();
     }
@@ -264,7 +262,6 @@ const handleDeviceInput = (devicePath: string) => {
     if (player) {
       players.forEach(p => { if (p.devicePath === devicePath) p.devicePath = null; });
       player.devicePath = devicePath;
-      console.log(`Mapped device ${devicePath} to Player ${player.id}`);
       saveConfig();
     }
     calibrationTarget = null;
@@ -395,8 +392,6 @@ const initHID = () => {
           return true;
       });
   
-      console.log(`Found ${uniqueDelcoms.length} unique Delcom devices.`);
-      
       uniqueDelcoms.forEach((d) => {
         if (!d.path) return;
         try {
@@ -406,9 +401,6 @@ const initHID = () => {
           let lastState = false;
 
           device.on('data', (data) => {
-             if (calibrationTarget !== null) {
-               console.log(`[HID ${d.path}] Data:`, data.toString('hex'));
-             }
              // Byte 3 check (from previous success)
              const pressed = data.length > 3 && data[3] > 0;
              if (pressed && !lastState && d.path) {
