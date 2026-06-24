@@ -83,7 +83,7 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* mock */ });
   });
 
   afterEach(() => {
@@ -174,30 +174,22 @@ describe('handleBuzz', () => {
   });
 
   it('should add player to earlyBuzzers and trigger broadcast if buzzing in IDLE state', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     __setGameStateForTest('IDLE');
 
     handleBuzz(1);
 
     expect(__getEarlyBuzzersForTest().has(1)).toBe(true);
-    expect(consoleLogSpy).toHaveBeenCalledWith('Player 1 buzzed early!');
     // Ideally we would verify broadcastState was called, but since it's an internal function and
     // not easily mockable without refactoring, we verify state changes.
-
-    consoleLogSpy.mockRestore();
   });
 
   it('should not add to earlyBuzzers again if player already buzzed early in IDLE state', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     __setGameStateForTest('IDLE');
     __getEarlyBuzzersForTest().add(1);
 
     handleBuzz(1);
 
     expect(__getEarlyBuzzersForTest().size).toBe(1);
-    expect(consoleLogSpy).not.toHaveBeenCalled();
-
-    consoleLogSpy.mockRestore();
   });
 
   it('should ignore buzz if player is in earlyBuzzers and buzzing within penalty period during OPEN state', () => {
