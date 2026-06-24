@@ -226,7 +226,6 @@ export const handleBuzz = (playerId: number) => {
 
   if (gameState === 'IDLE') {
     if (!earlyBuzzers.has(playerId)) {
-      console.log(`Player ${playerId} buzzed early!`);
       earlyBuzzers.add(playerId);
       broadcastState();
     }
