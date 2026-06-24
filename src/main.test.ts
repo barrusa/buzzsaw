@@ -70,7 +70,7 @@ describe('saveConfig', () => {
       // Mock implementation to prevent actual console.error output during testing
     });
 
-    saveConfig();
+    saveConfig(true);
 
     expect(fs.writeFileSync).toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', error);

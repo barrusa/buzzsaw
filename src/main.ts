@@ -93,7 +93,7 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
   return null;
 };
 
-export const saveConfig = () => {
+export const saveConfig = (sync = false) => {
   const config: ConfigData = {
     players,
     hostBounds: mainWindow?.getBounds(),
@@ -102,10 +102,17 @@ export const saveConfig = () => {
 
   const data = JSON.stringify(config, null, 2);
 
-  try {
-    fs.writeFileSync(DATA_PATH, data);
-  } catch (e) {
-    console.error('Failed to save config:', e);
+  if (sync) {
+    try {
+      fs.writeFileSync(DATA_PATH, data);
+    } catch (e) {
+      console.error('Failed to save config:', e);
+    }
+  } else {
+    fs.promises.writeFile(DATA_PATH, data)
+      .catch((e) => {
+        console.error('Failed to save config:', e);
+      });
   }
 };
 
@@ -291,7 +298,7 @@ const handleDeviceInput = (devicePath: string) => {
 
 // --- Helper: Force Quit ---
 const forceQuit = () => {
-  saveConfig();
+  saveConfig(true);
   // Nuclear option: Kill the process to prevent node-hid hangs
   process.kill(process.pid, 'SIGKILL');
 };
