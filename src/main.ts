@@ -91,7 +91,6 @@ export const saveConfig = () => {
 
   try {
     fs.writeFileSync(DATA_PATH, data);
-    console.log('Saved config to', DATA_PATH);
   } catch (e) {
     console.error('Failed to save config:', e);
   }
@@ -393,8 +392,6 @@ const initHID = () => {
           return true;
       });
   
-      console.log(`Found ${uniqueDelcoms.length} unique Delcom devices.`);
-      
       uniqueDelcoms.forEach((d) => {
         if (!d.path) return;
         try {
