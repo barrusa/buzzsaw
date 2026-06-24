@@ -5,7 +5,8 @@ import HID from 'node-hid';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (process.platform === 'win32') {
-  if (require('electron-squirrel-startup')) {
+  const squirrelStartup = 'electron-squirrel-startup';
+  if (require(squirrelStartup)) {
     app.quit();
   }
 }
