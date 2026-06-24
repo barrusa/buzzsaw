@@ -104,6 +104,106 @@ const PlayerSetup = ({ players, calibrationTarget }: { players: Player[], calibr
   );
 };
 
+const HostHeader = () => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <h1>Host Console</h1>
+    <div style={{ display: 'flex', gap: 10 }}>
+      <button onClick={() => window.electronAPI.openBoardWindow()}>
+        Focus Board
+      </button>
+      <button onClick={() => window.electronAPI.quitApp()} style={{ backgroundColor: '#555', color: 'white' }}>
+        Quit App
+      </button>
+    </div>
+  </div>
+);
+
+const HostControls = ({ gameState }: { gameState: string }) => (
+  <div style={{
+    display: 'flex', gap: 10, marginBottom: 30, padding: 20,
+    backgroundColor: '#eee', borderRadius: 10, justifyContent: 'center'
+  }}>
+    <button
+      onClick={() => window.electronAPI.openFloor()}
+      style={{
+        fontSize: '1.2rem', padding: '15px 30px', fontWeight: 'bold',
+        backgroundColor: gameState === 'OPEN' ? '#ddd' : '#4CAF50',
+        color: gameState === 'OPEN' ? '#888' : 'white',
+        border: 'none', borderRadius: 5, cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5
+      }}
+    >
+      <span>OPEN BUZZERS</span>
+      <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>[⇧⌘O]</span>
+    </button>
+
+    <button
+      onClick={() => window.electronAPI.resetGame()}
+      style={{
+        fontSize: '1rem', padding: '15px 20px',
+        backgroundColor: '#f44336', color: 'white',
+        border: 'none', borderRadius: 5, cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5
+      }}
+    >
+      <span>STOP / RESET</span>
+      <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>[⇧⌘R]</span>
+    </button>
+  </div>
+);
+
+const HostStatus = ({ gameState, timer }: { gameState: string, timer: number }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 20 }}>
+    <div style={{ textAlign: 'center' }}>
+      <h3>State</h3>
+      <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{gameState}</div>
+    </div>
+    <div style={{ textAlign: 'center' }}>
+      <h3>Timer</h3>
+      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: timer === 0 ? 'red' : 'black' }}>
+        {timer}s
+      </div>
+    </div>
+  </div>
+);
+
+const HostQueues = ({ buzzQueue, earlyBuzzers, getPlayerName }: { buzzQueue: Buzz[], earlyBuzzers: number[], getPlayerName: (id: number) => string }) => (
+  <div style={{ display: 'flex', gap: 20, marginBottom: 30 }}>
+    <div style={{ flex: 1, padding: 10, border: '1px solid #ccc', borderRadius: 5 }}>
+      <h3>Buzz Queue</h3>
+      {buzzQueue.length === 0 ? <p style={{ color: '#888' }}>Waiting for buzz...</p> : (
+        <ol style={{ fontSize: '1.2rem' }}>
+          {buzzQueue.map((b, i) => (
+            <li key={i} style={{ marginBottom: 5 }}>
+              <strong>{getPlayerName(b.player)}</strong> <span style={{ color: '#666' }}>({b.label})</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+
+    <div style={{ flex: 1, padding: 10, border: '1px solid #ccc', borderRadius: 5 }}>
+      <h3>Locked Out (Penalty)</h3>
+      {earlyBuzzers.length === 0 ? <p style={{ color: '#888' }}>None</p> : (
+        <ul style={{ color: 'red' }}>
+          {earlyBuzzers.map(p => <li key={p}>{getPlayerName(p)}</li>)}
+        </ul>
+      )}
+    </div>
+  </div>
+);
+
+const ManualSimulation = ({ getPlayerName }: { getPlayerName: (id: number) => string }) => (
+  <div style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 10 }}>
+    <h4>Manual Simulation</h4>
+    {[1, 2, 3].map(p => (
+       <button key={p} onClick={() => window.electronAPI.simulateBuzz(p)} style={{ marginRight: 10 }}>
+         Simulate {getPlayerName(p)}
+       </button>
+    ))}
+  </div>
+);
+
 const HostWindow = () => {
   const state = useGameState();
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
@@ -119,97 +219,12 @@ const HostWindow = () => {
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', maxWidth: 800, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Host Console</h1>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => window.electronAPI.openBoardWindow()}>
-            Focus Board
-          </button>
-          <button onClick={() => window.electronAPI.quitApp()} style={{ backgroundColor: '#555', color: 'white' }}>
-            Quit App
-          </button>
-        </div>
-      </div>
-
-      <div style={{ 
-        display: 'flex', gap: 10, marginBottom: 30, padding: 20, 
-        backgroundColor: '#eee', borderRadius: 10, justifyContent: 'center' 
-      }}>
-        <button 
-          onClick={() => window.electronAPI.openFloor()} 
-          style={{ 
-            fontSize: '1.2rem', padding: '15px 30px', fontWeight: 'bold',
-            backgroundColor: gameState === 'OPEN' ? '#ddd' : '#4CAF50',
-            color: gameState === 'OPEN' ? '#888' : 'white',
-            border: 'none', borderRadius: 5, cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5
-          }}
-        >
-          <span>OPEN BUZZERS</span>
-          <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>[⇧⌘O]</span>
-        </button>
-        
-        <button 
-          onClick={() => window.electronAPI.resetGame()} 
-          style={{ 
-            fontSize: '1rem', padding: '15px 20px',
-            backgroundColor: '#f44336', color: 'white',
-            border: 'none', borderRadius: 5, cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5
-          }}
-        >
-          <span>STOP / RESET</span>
-          <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>[⇧⌘R]</span>
-        </button>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 20 }}>
-        <div style={{ textAlign: 'center' }}>
-          <h3>State</h3>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{gameState}</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <h3>Timer</h3>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: timer === 0 ? 'red' : 'black' }}>
-            {timer}s
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 20, marginBottom: 30 }}>
-        <div style={{ flex: 1, padding: 10, border: '1px solid #ccc', borderRadius: 5 }}>
-          <h3>Buzz Queue</h3>
-          {buzzQueue.length === 0 ? <p style={{ color: '#888' }}>Waiting for buzz...</p> : (
-            <ol style={{ fontSize: '1.2rem' }}>
-              {buzzQueue.map((b, i) => (
-                <li key={i} style={{ marginBottom: 5 }}>
-                  <strong>{getPlayerName(b.player)}</strong> <span style={{ color: '#666' }}>({b.label})</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-        
-        <div style={{ flex: 1, padding: 10, border: '1px solid #ccc', borderRadius: 5 }}>
-          <h3>Locked Out (Penalty)</h3>
-          {earlyBuzzers.length === 0 ? <p style={{ color: '#888' }}>None</p> : (
-            <ul style={{ color: 'red' }}>
-              {earlyBuzzers.map(p => <li key={p}>{getPlayerName(p)}</li>)}
-            </ul>
-          )}
-        </div>
-      </div>
-
+      <HostHeader />
+      <HostControls gameState={gameState} />
+      <HostStatus gameState={gameState} timer={timer} />
+      <HostQueues buzzQueue={buzzQueue} earlyBuzzers={earlyBuzzers} getPlayerName={getPlayerName} />
       <PlayerSetup players={players || []} calibrationTarget={calibrationTarget} />
-
-      <div style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 10 }}>
-        <h4>Manual Simulation</h4>
-        {[1, 2, 3].map(p => (
-           <button key={p} onClick={() => window.electronAPI.simulateBuzz(p)} style={{ marginRight: 10 }}>
-             Simulate {getPlayerName(p)}
-           </button>
-        ))}
-      </div>
+      <ManualSimulation getPlayerName={getPlayerName} />
     </div>
   );
 };
