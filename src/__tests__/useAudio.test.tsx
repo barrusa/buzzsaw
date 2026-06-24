@@ -130,4 +130,36 @@ describe('useAudio', () => {
         consoleErrorMock.mockRestore();
     });
   });
+
+  it('should handle errors thrown by timeout audio play gracefully', () => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => {});
+    playMock.mockRejectedValueOnce(new Error('Audio playback failed'));
+
+    const initialState = {
+      gameState: 'OPEN',
+      buzzQueue: [],
+      earlyBuzzers: [],
+      timer: 5,
+      players: [],
+      calibrationTarget: null,
+    } as any;
+
+    const { rerender } = renderHook(({ state }) => useAudio(state), {
+      initialProps: { state: initialState }
+    });
+
+    rerender({
+      state: {
+        ...initialState,
+        timer: 0,
+      }
+    });
+
+    // We have to wait for the promise rejection to be caught
+    return Promise.resolve().then(() => {
+        expect(consoleErrorMock).toHaveBeenCalledWith('Audio error', expect.any(Error));
+        consoleErrorMock.mockRestore();
+    });
+  });
 });
