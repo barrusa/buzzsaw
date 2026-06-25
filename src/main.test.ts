@@ -158,7 +158,7 @@ describe('loadConfig', () => {
 });
 
 describe('handleBuzz', () => {
-  let performanceNowSpy: any;
+  let performanceNowSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -174,6 +174,7 @@ describe('handleBuzz', () => {
   });
 
   it('should add player to earlyBuzzers and trigger broadcast if buzzing in IDLE state', () => {
+
     __setGameStateForTest('IDLE');
 
     handleBuzz(1);
@@ -184,6 +185,7 @@ describe('handleBuzz', () => {
   });
 
   it('should not add to earlyBuzzers again if player already buzzed early in IDLE state', () => {
+
     __setGameStateForTest('IDLE');
     __getEarlyBuzzersForTest().add(1);
 
