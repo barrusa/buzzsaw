@@ -19,7 +19,11 @@ vi.mock('fs', () => {
     default: {
       existsSync: vi.fn().mockReturnValue(false),
       readFileSync: vi.fn(),
-      writeFileSync: vi.fn()
+      writeFileSync: vi.fn(),
+      promises: {
+        readFile: vi.fn().mockResolvedValue('{}'),
+        writeFile: vi.fn().mockResolvedValue(undefined)
+      }
     }
   };
 });
@@ -50,8 +54,11 @@ import {
   __getTimerValueForTest,
   __getTimerIntervalForTest,
   __setTimerIntervalForTest,
-  __getGameStateForTest
+  __getGameStateForTest,
+  loadConfig
 } from '../main.ts';
+
+import fs from 'fs';
 
 describe('Test Utilities', () => {
   it('should set and get gameState', () => {
@@ -81,6 +88,59 @@ describe('Test Utilities', () => {
   it('should set and get floorOpenTime', () => {
     __setFloorOpenTimeForTest(12345);
     expect(floorOpenTime).toBe(12345);
+  });
+});
+
+describe('loadConfig', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    vi.mocked(fs.promises.readFile).mockRestore();
+  });
+
+  it('should return null and not log an error if file does not exist (ENOENT)', async () => {
+    const error = new Error('ENOENT') as any;
+    error.code = 'ENOENT';
+    vi.mocked(fs.promises.readFile).mockRejectedValue(error);
+
+    const result = await loadConfig();
+
+    expect(result).toBeNull();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should return null and log an error if read fails with other error', async () => {
+    const error = new Error('EACCES') as any;
+    error.code = 'EACCES';
+    vi.mocked(fs.promises.readFile).mockRejectedValue(error);
+
+    const result = await loadConfig();
+
+    expect(result).toBeNull();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config:', error);
+  });
+
+  it('should return null and log an error if JSON is invalid', async () => {
+    vi.mocked(fs.promises.readFile).mockResolvedValue('invalid-json');
+
+    const result = await loadConfig();
+
+    expect(result).toBeNull();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config:', expect.any(SyntaxError));
+  });
+
+  it('should return null and log an error if config format is invalid', async () => {
+    vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({ players: 'not-an-array' }));
+
+    const result = await loadConfig();
+
+    expect(result).toBeNull();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config: Invalid configuration format');
   });
 });
 
