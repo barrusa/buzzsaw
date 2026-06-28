@@ -19,7 +19,11 @@ vi.mock('fs', () => {
     default: {
       existsSync: vi.fn().mockReturnValue(false),
       readFileSync: vi.fn(),
-      writeFileSync: vi.fn()
+      writeFileSync: vi.fn(),
+      promises: {
+        readFile: vi.fn(),
+        writeFile: vi.fn().mockResolvedValue(undefined)
+      }
     }
   };
 });
@@ -50,8 +54,63 @@ import {
   __getTimerValueForTest,
   __getTimerIntervalForTest,
   __setTimerIntervalForTest,
-  __getGameStateForTest
+  __getGameStateForTest,
+  updatePlayerNameHandler,
+  __getPlayersForTest,
+  __setPlayersForTest
 } from '../main.ts';
+
+describe('updatePlayerNameHandler', () => {
+  let mockEvent: Electron.IpcMainEvent;
+
+  beforeEach(() => {
+    mockEvent = {} as Electron.IpcMainEvent;
+    __setPlayersForTest([
+      { id: 1, name: "Player 1", devicePath: null },
+      { id: 2, name: "Player 2", devicePath: null }
+    ]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns early if payload is falsy', () => {
+    updatePlayerNameHandler(mockEvent, null);
+    updatePlayerNameHandler(mockEvent, undefined);
+    expect(__getPlayersForTest()[0].name).toBe("Player 1");
+  });
+
+  it('returns early if payload is not an object or is an array', () => {
+    updatePlayerNameHandler(mockEvent, "string payload");
+    updatePlayerNameHandler(mockEvent, 123);
+    updatePlayerNameHandler(mockEvent, [{ id: 1, name: 'New Name' }]);
+    expect(__getPlayersForTest()[0].name).toBe("Player 1");
+  });
+
+  it('returns early if id or name are missing or invalid types', () => {
+    updatePlayerNameHandler(mockEvent, { name: 'New Name' }); // missing id
+    updatePlayerNameHandler(mockEvent, { id: 1 }); // missing name
+    updatePlayerNameHandler(mockEvent, { id: '1', name: 'New Name' }); // invalid id type
+    updatePlayerNameHandler(mockEvent, { id: 1, name: 123 }); // invalid name type
+    expect(__getPlayersForTest()[0].name).toBe("Player 1");
+  });
+
+  it('updates the name if player id matches and limits length to 50 characters', () => {
+    updatePlayerNameHandler(mockEvent, { id: 1, name: '  New Player Name  ' });
+    expect(__getPlayersForTest()[0].name).toBe('New Player Name');
+
+    const longName = 'A'.repeat(60);
+    updatePlayerNameHandler(mockEvent, { id: 2, name: longName });
+    expect(__getPlayersForTest()[1].name).toBe('A'.repeat(50));
+  });
+
+  it('does nothing if player id is not found', () => {
+    updatePlayerNameHandler(mockEvent, { id: 3, name: 'New Name' });
+    expect(__getPlayersForTest()[0].name).toBe("Player 1");
+    expect(__getPlayersForTest()[1].name).toBe("Player 2");
+  });
+});
 
 describe('Test Utilities', () => {
   it('should set and get gameState', () => {
