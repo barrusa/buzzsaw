@@ -61,7 +61,7 @@ describe('Audio error tests', () => {
   });
 
   it('handles audio play error for buzz audio', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
     const error = new Error('Buzz play failed');
     window.HTMLMediaElement.prototype.play = vi.fn().mockRejectedValue(error);
 
@@ -86,7 +86,7 @@ describe('Audio error tests', () => {
   });
 
   it('handles audio play error for timeout audio', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
     const error = new Error('Timeout play failed');
     window.HTMLMediaElement.prototype.play = vi.fn().mockRejectedValue(error);
 
