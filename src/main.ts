@@ -285,7 +285,8 @@ const handleDeviceInput = (devicePath: string) => {
   if (calibrationTarget !== null) {
     const player = players.find(p => p.id === calibrationTarget);
     if (player) {
-      players.forEach(p => { if (p.devicePath === devicePath) p.devicePath = null; });
+      const existingPlayer = deviceMap.get(devicePath);
+      if (existingPlayer) existingPlayer.devicePath = null;
       player.devicePath = devicePath;
       updateDeviceMap();
       saveConfig();
