@@ -18,6 +18,11 @@ vi.mock('fs', () => {
   return {
     default: {
       existsSync: vi.fn().mockReturnValue(false),
+      promises: {
+        readFile: vi.fn(),
+        writeFile: vi.fn(),
+        access: vi.fn()
+      },
       readFileSync: vi.fn(),
       writeFileSync: vi.fn()
     }
@@ -50,7 +55,8 @@ import {
   __getTimerValueForTest,
   __getTimerIntervalForTest,
   __setTimerIntervalForTest,
-  __getGameStateForTest
+  __getGameStateForTest,
+  loadConfig
 } from '../main.ts';
 
 describe('Test Utilities', () => {
@@ -260,5 +266,26 @@ describe('handleBuzz', () => {
       expect(earlyBuzzers.size).toBe(0);
       expect(buzzQueue.length).toBe(0);
     });
+  });
+});
+
+describe('loadConfig', () => {
+  it('should handle non-ENOENT error by logging to console.error', async () => {
+    // Mock fs.promises.readFile to throw a generic error
+    const testError = new Error('Generic file read error');
+
+    // We need to require fs to mock it
+    const fs = await import('fs');
+    (fs.default.promises.readFile as any).mockRejectedValue(testError);
+
+    // Spy on console.error
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await loadConfig();
+
+    expect(result).toBeNull();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config:', testError);
+
+    consoleErrorSpy.mockRestore();
   });
 });
