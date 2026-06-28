@@ -119,6 +119,8 @@ export const saveConfig = (sync = false) => {
 
 // --- Game State & Logic ---
 
+const PENALTY_TIME_MS = 250;
+
 type GameState = 'IDLE' | 'OPEN' | 'LOCKED';
 
 interface Buzz {
@@ -259,7 +261,7 @@ export const handleBuzz = (playerId: number) => {
   if (gameState === 'OPEN') {
     // Check penalty
     if (earlyBuzzers.has(playerId)) {
-      const unlockTime = floorOpenTime + 250;
+      const unlockTime = floorOpenTime + PENALTY_TIME_MS;
       if (now < unlockTime) {
         return; // Ignore buzz
       }
@@ -325,11 +327,11 @@ export const openFloor = () => {
   buzzQueue = [];
   floorOpenTime = performance.now();
   
-  // Clear early buzzers after penalty time (250ms)
+  // Clear early buzzers after penalty time
   setTimeout(() => {
     earlyBuzzers.clear();
     broadcastState();
-  }, 250);
+  }, PENALTY_TIME_MS);
   
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
