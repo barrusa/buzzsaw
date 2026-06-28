@@ -147,6 +147,8 @@ export const __getTimerValueForTest = () => { return timerValue; };
 export const __getGameStateForTest = () => { return gameState; };
 export const __getTimerIntervalForTest = () => { return timerInterval; };
 export const __setTimerIntervalForTest = (interval: NodeJS.Timeout | null) => { timerInterval = interval; };
+export const __getCalibrationTargetForTest = () => { return calibrationTarget; };
+export const __setCalibrationTargetForTest = (target: number | null) => { calibrationTarget = target; };
 
 // Devices
 const VENDOR_ID = 0x0fc5;
