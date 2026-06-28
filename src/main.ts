@@ -310,7 +310,7 @@ const forceQuit = () => {
 
 // --- IPC Handlers ---
 
-const resetGame = () => {
+export const resetGame = () => {
   gameState = 'IDLE';
   buzzQueue = [];
   earlyBuzzers.clear();

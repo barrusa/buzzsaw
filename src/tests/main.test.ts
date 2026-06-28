@@ -37,6 +37,7 @@ vi.mock('node-hid', () => {
 import {
   handleBuzz,
   openFloor,
+  resetGame,
   buzzQueue,
   earlyBuzzers,
   gameState,
@@ -260,5 +261,29 @@ describe('handleBuzz', () => {
       expect(earlyBuzzers.size).toBe(0);
       expect(buzzQueue.length).toBe(0);
     });
+  });
+});
+
+describe('resetGame', () => {
+  it('resets all game state to initial values', () => {
+    // Set non-default state
+    __setGameStateForTest('OPEN');
+    __setBuzzQueueForTest([{ player: 1, timestamp: 900, delta: 0, label: '' }]);
+    __setEarlyBuzzersForTest(new Set([1]));
+    const mockInterval = setInterval(() => {}, 1000);
+    __setTimerIntervalForTest(mockInterval);
+
+    // Call resetGame
+    resetGame();
+
+    // Verify reset
+    expect(__getGameStateForTest()).toBe('IDLE');
+    expect(__getBuzzQueueForTest()).toEqual([]);
+    expect(__getEarlyBuzzersForTest().size).toBe(0);
+    expect(__getTimerValueForTest()).toBe(5);
+    expect(__getTimerIntervalForTest()).toBeNull();
+
+    // clean up
+    clearInterval(mockInterval);
   });
 });
