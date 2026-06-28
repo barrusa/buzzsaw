@@ -9,7 +9,8 @@ import {
   __getEarlyBuzzersForTest,
   __setFloorOpenTimeForTest,
   __getBuzzQueueForTest,
-  __setBuzzQueueForTest
+  __setBuzzQueueForTest,
+  PENALTY_TIME_MS
 } from './main';
 
 // Mocks setup
@@ -198,7 +199,7 @@ describe('handleBuzz', () => {
     __setGameStateForTest('OPEN');
     __getEarlyBuzzersForTest().add(1);
     __setFloorOpenTimeForTest(1000);
-    performanceNowSpy.mockReturnValue(1100); // 100ms after floor open (within 250ms penalty)
+    performanceNowSpy.mockReturnValue(1100); // 100ms after floor open (within PENALTY_TIME_MS penalty)
 
     handleBuzz(1);
 
@@ -209,14 +210,14 @@ describe('handleBuzz', () => {
     __setGameStateForTest('OPEN');
     __getEarlyBuzzersForTest().add(1);
     __setFloorOpenTimeForTest(1000);
-    performanceNowSpy.mockReturnValue(1300); // 300ms after floor open (after 250ms penalty)
+    performanceNowSpy.mockReturnValue(1000 + PENALTY_TIME_MS + 50); // 50ms after penalty ends
 
     handleBuzz(1);
 
     const queue = __getBuzzQueueForTest();
     expect(queue).toHaveLength(1);
     expect(queue[0].player).toBe(1);
-    expect(queue[0].timestamp).toBe(1300);
+    expect(queue[0].timestamp).toBe(1000 + PENALTY_TIME_MS + 50);
     expect(queue[0].delta).toBe(0);
     expect(queue[0].label).toBe('');
   });

@@ -50,7 +50,8 @@ import {
   __getTimerValueForTest,
   __getTimerIntervalForTest,
   __setTimerIntervalForTest,
-  __getGameStateForTest
+  __getGameStateForTest,
+  PENALTY_TIME_MS
 } from '../main.ts';
 
 describe('Test Utilities', () => {
@@ -111,7 +112,7 @@ describe('openFloor', () => {
   it('clears early buzzers after penalty time', () => {
     openFloor();
     expect(earlyBuzzers.size).toBe(2);
-    vi.advanceTimersByTime(250);
+    vi.advanceTimersByTime(PENALTY_TIME_MS);
     expect(earlyBuzzers.size).toBe(0);
   });
 
@@ -183,12 +184,12 @@ describe('handleBuzz', () => {
   describe('when gameState is OPEN', () => {
     beforeEach(() => {
       __setGameStateForTest('OPEN');
-      __setFloorOpenTimeForTest(800); // 1000 - 800 = 200 (within 250ms penalty window)
+      __setFloorOpenTimeForTest(800); // 1000 - 800 = 200 (within penalty window)
     });
 
     it('should ignore buzz if player is in earlyBuzzers and within penalty window', () => {
       __setEarlyBuzzersForTest(new Set([1]));
-      // penalty unlock time = floorOpenTime (800) + 250 = 1050
+      // penalty unlock time = floorOpenTime (800) + PENALTY_TIME_MS (250) = 1050
       // now = 1000
 
       handleBuzz(1);
@@ -198,7 +199,7 @@ describe('handleBuzz', () => {
 
     it('should process buzz if player is in earlyBuzzers but penalty window has passed', () => {
       __setEarlyBuzzersForTest(new Set([1]));
-      __setFloorOpenTimeForTest(700); // penalty unlock time = 700 + 250 = 950. now = 1000.
+      __setFloorOpenTimeForTest(700); // penalty unlock time = 700 + PENALTY_TIME_MS (250) = 950. now = 1000.
 
       handleBuzz(1);
 

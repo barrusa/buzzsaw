@@ -132,6 +132,7 @@ export let gameState: GameState = 'IDLE';
 export let buzzQueue: Buzz[] = [];
 export let earlyBuzzers: Set<number> = new Set();
 export let floorOpenTime = 0;
+export const PENALTY_TIME_MS = 250;
 let timerValue = 5;
 let timerInterval: NodeJS.Timeout | null = null;
 let calibrationTarget: number | null = null;
@@ -259,7 +260,7 @@ export const handleBuzz = (playerId: number) => {
   if (gameState === 'OPEN') {
     // Check penalty
     if (earlyBuzzers.has(playerId)) {
-      const unlockTime = floorOpenTime + 250;
+      const unlockTime = floorOpenTime + PENALTY_TIME_MS;
       if (now < unlockTime) {
         return; // Ignore buzz
       }
@@ -325,11 +326,11 @@ export const openFloor = () => {
   buzzQueue = [];
   floorOpenTime = performance.now();
   
-  // Clear early buzzers after penalty time (250ms)
+  // Clear early buzzers after penalty time
   setTimeout(() => {
     earlyBuzzers.clear();
     broadcastState();
-  }, 250);
+  }, PENALTY_TIME_MS);
   
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
