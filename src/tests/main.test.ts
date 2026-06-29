@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 
 vi.mock('electron', () => {
   return {
@@ -56,7 +56,9 @@ import {
   __setTimerIntervalForTest,
   __getGameStateForTest,
   __forceQuitForTest,
-  loadConfig
+  loadConfig,
+  __getCalibrationTargetForTest,
+  __setCalibrationTargetForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -382,5 +384,46 @@ describe('loadConfig', () => {
     const result = await loadConfig();
     expect(result).toBeNull();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config:', error);
+  });
+});
+
+describe('start-calibration IPC Handler', () => {
+  let startCalibrationHandler: Function;
+
+  beforeAll(async () => {
+    // We import electron to get the mocked IPC
+    const electron = await import('electron');
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+
+    const calls = vi.mocked(electron.ipcMain.on).mock.calls;
+    const call = calls.find((c: any) => c[0] === 'start-calibration');
+    if (call) {
+        startCalibrationHandler = call[1];
+    }
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setCalibrationTargetForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(startCalibrationHandler).toBeDefined();
+  });
+
+  it('should ignore non-number playerIds', () => {
+    startCalibrationHandler({}, 'not-a-number');
+    expect(__getCalibrationTargetForTest()).toBeNull();
+  });
+
+  it('should ignore playerIds that do not exist', () => {
+    startCalibrationHandler({}, 999);
+    expect(__getCalibrationTargetForTest()).toBeNull();
+  });
+
+  it('should set calibrationTarget for a valid playerId', () => {
+    startCalibrationHandler({}, 1); // 1 is a valid player id
+    expect(__getCalibrationTargetForTest()).toBe(1);
   });
 });
