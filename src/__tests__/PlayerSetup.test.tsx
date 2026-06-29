@@ -15,8 +15,7 @@ const mockElectronAPI = {
 describe('PlayerSetup', () => {
   beforeEach(() => {
     // Inject the mock into the global window object
-    // @ts-ignore
-    window.electronAPI = mockElectronAPI;
+    (window as any).electronAPI = mockElectronAPI;
   });
 
   afterEach(() => {

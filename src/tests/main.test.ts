@@ -124,7 +124,7 @@ describe('openFloor', () => {
   });
 
   it('clears existing timerInterval', () => {
-    const mockInterval = setInterval(() => {}, 10000);
+    const mockInterval = setInterval(() => { /* noop */ }, 10000);
     __setTimerIntervalForTest(mockInterval);
 
     // In node, a timer object isn't strictly identical if cleared, but

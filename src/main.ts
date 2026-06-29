@@ -409,43 +409,47 @@ ipcMain.on('quit-app', () => {
 
 // --- HID Setup (Event Mode - Restored) ---
 
+const getUniqueDelcoms = (devices: HID.Device[]): HID.Device[] => {
+  const delcoms = devices.filter(d => d.vendorId === DELCOM_VENDOR_ID && d.productId === DELCOM_PRODUCT_ID);
+  const uniquePaths = new Set<string>();
+
+  return delcoms.filter(d => {
+      if (!d.path) return false;
+      if (uniquePaths.has(d.path)) return false;
+      uniquePaths.add(d.path);
+      return true;
+  });
+};
+
+const setupDevice = (d: HID.Device) => {
+  if (!d.path) return;
+  try {
+    const device = new HID.HID(d.path);
+    hidDevices.push(device);
+
+    let lastState = false;
+
+    device.on('data', (data) => {
+       // Byte 3 check (from previous success)
+       const pressed = data.length > 3 && data[3] > 0;
+       if (pressed && !lastState && d.path) {
+         handleDeviceInput(d.path);
+       }
+       lastState = pressed;
+    });
+
+    device.on('error', (err) => console.error('HID Error:', err));
+  } catch (e) {
+    console.error(`Failed to open device at ${d.path}`, e);
+  }
+};
+
 const initHID = () => {
   setTimeout(() => {
     try {
       const devices = HID.devices();
-      const delcoms = devices.filter(d => d.vendorId === DELCOM_VENDOR_ID && d.productId === DELCOM_PRODUCT_ID);
-      
-      const uniquePaths = new Set<string>();
-      const uniqueDelcoms = delcoms.filter(d => {
-          if (!d.path) return false;
-          if (uniquePaths.has(d.path)) return false;
-          uniquePaths.add(d.path);
-          return true;
-      });
-      
-      uniqueDelcoms.forEach((d) => {
-        if (!d.path) return;
-        try {
-          const device = new HID.HID(d.path);
-          hidDevices.push(device);
-          
-          let lastState = false;
-
-          device.on('data', (data) => {
-             // Byte 3 check (from previous success)
-             const pressed = data.length > 3 && data[3] > 0;
-             if (pressed && !lastState && d.path) {
-               handleDeviceInput(d.path);
-             }
-             lastState = pressed;
-          });
-          
-          device.on('error', (err) => console.error('HID Error:', err));
-        } catch (e) {
-          console.error(`Failed to open device at ${d.path}`, e);
-        }
-      });
-      
+      const uniqueDelcoms = getUniqueDelcoms(devices);
+      uniqueDelcoms.forEach(setupDevice);
     } catch (e) {
       console.error("HID Initialization failed:", e);
     }
