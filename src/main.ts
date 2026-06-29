@@ -149,8 +149,8 @@ export const __getTimerIntervalForTest = () => { return timerInterval; };
 export const __setTimerIntervalForTest = (interval: NodeJS.Timeout | null) => { timerInterval = interval; };
 
 // Devices
-const VENDOR_ID = 0x0fc5;
-const PRODUCT_ID = 0xb080;
+const DELCOM_VENDOR_ID = 0x0fc5;
+const DELCOM_PRODUCT_ID = 0xb080;
 const hidDevices: HID.HID[] = [];
 
 let mainWindow: BrowserWindow | null = null;
@@ -412,7 +412,7 @@ const initHID = () => {
   setTimeout(() => {
     try {
       const devices = HID.devices();
-      const delcoms = devices.filter(d => d.vendorId === VENDOR_ID && d.productId === PRODUCT_ID);
+      const delcoms = devices.filter(d => d.vendorId === DELCOM_VENDOR_ID && d.productId === DELCOM_PRODUCT_ID);
       
       const uniquePaths = new Set<string>();
       const uniqueDelcoms = delcoms.filter(d => {
