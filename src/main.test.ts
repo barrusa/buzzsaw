@@ -9,7 +9,8 @@ import {
   __getEarlyBuzzersForTest,
   __setFloorOpenTimeForTest,
   __getBuzzQueueForTest,
-  __setBuzzQueueForTest
+  __setBuzzQueueForTest,
+  __resetLastSavedDataForTest
 } from './main';
 
 // Mocks setup
@@ -58,6 +59,7 @@ vi.mock('fs', () => ({
 describe('saveConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetLastSavedDataForTest();
   });
 
   it('should catch and log errors thrown by fs.writeFileSync', () => {

@@ -72,9 +72,14 @@ const isValidConfigData = (data: unknown): data is ConfigData => {
   return true;
 };
 
+let lastSavedData: string | null = null;
+
+export const __resetLastSavedDataForTest = () => { lastSavedData = null; };
+
 export const loadConfig = async (): Promise<ConfigData | null> => {
   try {
     const fileContent = await fs.promises.readFile(DATA_PATH, 'utf-8');
+    lastSavedData = fileContent;
     const data = JSON.parse(fileContent);
     if (isValidConfigData(data)) {
       players = data.players;
@@ -103,16 +108,29 @@ export const saveConfig = (sync = false) => {
 
   const data = JSON.stringify(config, null, 2);
 
+  // If data hasn't changed and this isn't a forced synchronous save, skip writing
+  if (!sync && data === lastSavedData) {
+    return;
+  }
+
   if (sync) {
     try {
       fs.writeFileSync(DATA_PATH, data);
+      lastSavedData = data;
     } catch (e) {
       console.error('Failed to save config:', e);
+      lastSavedData = null;
     }
   } else {
+    // Only update cache after successful write to avoid races where an in-flight
+    // async write is interrupted by a sync forceQuit before the file is flushed
     fs.promises.writeFile(DATA_PATH, data)
+      .then(() => {
+        lastSavedData = data;
+      })
       .catch((e) => {
         console.error('Failed to save config:', e);
+        lastSavedData = null;
       });
   }
 };
