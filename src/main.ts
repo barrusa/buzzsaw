@@ -84,8 +84,9 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
       console.error('Failed to load config: Invalid configuration format');
       return null;
     }
-  } catch (e: any) {
-    if (e.code === 'ENOENT') {
+  } catch (e: unknown) {
+    const err = e as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') {
       // File does not exist, not an error
       return null;
     }
