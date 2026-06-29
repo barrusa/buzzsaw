@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 
 vi.mock('electron', () => {
+  const handlers = new Map<string, Function>();
+  (globalThis as any).mockIpcHandlers = handlers;
   return {
     app: {
       getPath: vi.fn().mockReturnValue('/mock/path'),
@@ -8,7 +10,11 @@ vi.mock('electron', () => {
       quit: vi.fn()
     },
     BrowserWindow: vi.fn(),
-    ipcMain: { on: vi.fn() },
+    ipcMain: {
+      on: vi.fn((channel, handler) => {
+        handlers.set(channel, handler);
+      })
+    },
     globalShortcut: { register: vi.fn() }
   };
 });
@@ -391,16 +397,9 @@ describe('start-calibration IPC Handler', () => {
   let startCalibrationHandler: Function;
 
   beforeAll(async () => {
-    // We import electron to get the mocked IPC
-    const electron = await import('electron');
     // Ensure the module is imported to register handlers
     await import('../main.ts');
-
-    const calls = vi.mocked(electron.ipcMain.on).mock.calls;
-    const call = calls.find((c: any) => c[0] === 'start-calibration');
-    if (call) {
-        startCalibrationHandler = call[1];
-    }
+    startCalibrationHandler = (globalThis as any).mockIpcHandlers.get('start-calibration')!;
   });
 
   beforeEach(() => {
