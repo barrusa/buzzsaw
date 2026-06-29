@@ -150,6 +150,8 @@ export const __getTimerIntervalForTest = () => { return timerInterval; };
 export const __setTimerIntervalForTest = (interval: NodeJS.Timeout | null) => { timerInterval = interval; };
 export const __getCalibrationTargetForTest = () => { return calibrationTarget; };
 export const __setCalibrationTargetForTest = (target: number | null) => { calibrationTarget = target; };
+export const __getPlayersForTest = () => players;
+export const __setPlayersForTest = (p: Player[]) => { players = p; };
 
 // Devices
 const DELCOM_VENDOR_ID = 0x0fc5;
@@ -361,9 +363,9 @@ ipcMain.on('reset-game', () => {
   resetGame();
 });
 
-ipcMain.on('update-player-name', (event, payload) => {
+export const updatePlayerNameHandler = (event: Electron.IpcMainEvent, payload: unknown) => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
-  const { id, name } = payload;
+  const { id, name } = payload as { id: unknown, name: unknown };
 
   // Validate id is a number and name is a string
   if (typeof id !== 'number' || typeof name !== 'string') return;
@@ -377,7 +379,9 @@ ipcMain.on('update-player-name', (event, payload) => {
     saveConfig();
     broadcastState();
   }
-});
+};
+
+ipcMain.on('update-player-name', updatePlayerNameHandler);
 
 ipcMain.on('start-calibration', (event, playerId) => {
   if (typeof playerId !== 'number') return;
