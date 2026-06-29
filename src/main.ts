@@ -308,6 +308,7 @@ const forceQuit = () => {
   // Nuclear option: Kill the process to prevent node-hid hangs
   process.kill(process.pid, 'SIGKILL');
 };
+export const __forceQuitForTest = forceQuit;
 
 // --- IPC Handlers ---
 

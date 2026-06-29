@@ -50,7 +50,8 @@ import {
   __getTimerValueForTest,
   __getTimerIntervalForTest,
   __setTimerIntervalForTest,
-  __getGameStateForTest
+  __getGameStateForTest,
+  __forceQuitForTest
 } from '../main.ts';
 
 describe('Test Utilities', () => {
@@ -260,5 +261,27 @@ describe('handleBuzz', () => {
       expect(earlyBuzzers.size).toBe(0);
       expect(buzzQueue.length).toBe(0);
     });
+  });
+});
+
+describe('forceQuit', () => {
+  let processKillSpy: any;
+
+  beforeEach(() => {
+    processKillSpy = vi.spyOn(process, 'kill').mockImplementation(() => { /* noop to prevent exiting tests */ });
+  });
+
+  afterEach(() => {
+    processKillSpy.mockRestore();
+  });
+
+  it('should save config synchronously and kill the process', async () => {
+    // We get the fs mock we created at the top of the file
+    const fs = await import('fs');
+
+    __forceQuitForTest();
+
+    expect(fs.default.writeFileSync).toHaveBeenCalled();
+    expect(processKillSpy).toHaveBeenCalledWith(process.pid, 'SIGKILL');
   });
 });
