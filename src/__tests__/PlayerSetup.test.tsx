@@ -46,13 +46,21 @@ describe('PlayerSetup', () => {
     expect(screen.getByText('✓ Ready')).toBeInTheDocument();     // Bob
   });
 
-  it('triggers updatePlayerName when name input changes', () => {
+  it('triggers updatePlayerName when name input changes after a debounce', () => {
+    vi.useFakeTimers();
     render(<PlayerSetup players={mockPlayers} calibrationTarget={null} />);
 
     const aliceInput = screen.getByDisplayValue('Alice');
     fireEvent.change(aliceInput, { target: { value: 'Alicia' } });
 
+    // Should not be called immediately
+    expect(mockElectronAPI.updatePlayerName).not.toHaveBeenCalled();
+
+    // Advance timers to trigger debounce
+    vi.advanceTimersByTime(500);
+
     expect(mockElectronAPI.updatePlayerName).toHaveBeenCalledWith(1, 'Alicia');
+    vi.useRealTimers();
   });
 
   it('triggers startCalibration when Map Buzzer is clicked', () => {

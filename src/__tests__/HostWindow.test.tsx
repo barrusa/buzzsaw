@@ -141,8 +141,14 @@ describe('HostWindow', () => {
     });
 
     const input = screen.getByDisplayValue('Alice');
+
+    vi.useFakeTimers();
     fireEvent.change(input, { target: { value: 'Alicia' } });
+    React.act(() => {
+      vi.advanceTimersByTime(500);
+    });
     expect(mockElectronAPI.updatePlayerName).toHaveBeenCalledWith(1, 'Alicia');
+    vi.useRealTimers();
 
     // Map Buzzer
     fireEvent.click(screen.getByText('Map Buzzer'));
