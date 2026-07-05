@@ -69,10 +69,12 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setupDeviceForTest
 } from '../main.ts';
 
 import fs from 'fs';
+import HID from 'node-hid';
 
 describe('updatePlayerNameHandler', () => {
   let mockEvent: Electron.IpcMainEvent;
@@ -481,5 +483,30 @@ describe('start-calibration IPC Handler', () => {
   it('should set calibrationTarget for a valid playerId', () => {
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
+  });
+});
+
+describe('__setupDeviceForTest', () => {
+  it('logs an error when HID constructor throws', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Create a mock error that will be thrown
+    const mockError = new Error('Simulated HID open error');
+
+    // Mock the HID constructor implementation just for this test
+    vi.mocked(HID.HID).mockImplementationOnce(function() {
+      throw mockError;
+    } as any);
+
+    const mockDevice = { path: 'mock-path-123', vendorId: 1, productId: 1 };
+
+    __setupDeviceForTest(mockDevice);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      `Failed to open device at mock-path-123`,
+      mockError
+    );
+
+    consoleErrorSpy.mockRestore();
   });
 });

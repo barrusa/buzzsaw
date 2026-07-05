@@ -428,7 +428,10 @@ const getUniqueDelcoms = (devices: HID.Device[]): HID.Device[] => {
   });
 };
 
-const setupDevice = (d: HID.Device) => {
+
+
+
+export const __setupDeviceForTest = (d: HID.Device) => {
   if (!d.path) return;
   try {
     const device = new HID.HID(d.path);
@@ -456,7 +459,7 @@ const initHID = () => {
     try {
       const devices = HID.devices();
       const uniqueDelcoms = getUniqueDelcoms(devices);
-      uniqueDelcoms.forEach(setupDevice);
+      uniqueDelcoms.forEach(__setupDeviceForTest);
     } catch (e) {
       console.error("HID Initialization failed:", e);
     }
