@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import TimerSection from './components/TimerSection';
 import StateText from './components/StateText';
@@ -208,7 +208,7 @@ export const HostWindow = () => {
   const state = useGameState();
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
 
-  const playerMap = useMemo(() => {
+  const playerMap = React.useMemo(() => {
     return players.reduce((acc, p) => {
       acc[p.id] = p.name;
       return acc;
@@ -235,7 +235,7 @@ export const BoardWindow = () => {
   
   const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
 
-  const playerMap = useMemo(() => {
+  const playerMap = React.useMemo(() => {
     return (players || []).reduce((acc, p) => {
       acc[p.id] = p.name;
       return acc;
