@@ -64,6 +64,7 @@ import {
   __getGameStateForTest,
   __forceQuitForTest,
   loadConfig,
+  saveConfig,
   __getCalibrationTargetForTest,
   __setCalibrationTargetForTest,
   updatePlayerNameHandler,
@@ -449,6 +450,40 @@ describe('loadConfig', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config:', error);
   });
 });
+describe("saveConfig", () => {
+  let consoleErrorSpy: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("should handle async writeFile rejection", async () => {
+    const error = new Error("Write failed");
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
+
+    saveConfig(false);
+
+    // Let the rejected promise be handled
+    await Promise.resolve();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+  });
+
+  it("should handle sync writeFileSync error", () => {
+    const error = new Error("Sync write failed");
+    vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
+
+    saveConfig(true);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+  });
+});
+
 
 describe('start-calibration IPC Handler', () => {
   let startCalibrationHandler: Function;
