@@ -69,10 +69,12 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __initHIDForTest
 } from '../main.ts';
 
 import fs from 'fs';
+import HID from 'node-hid';
 
 describe('updatePlayerNameHandler', () => {
   let mockEvent: Electron.IpcMainEvent;
@@ -481,5 +483,31 @@ describe('start-calibration IPC Handler', () => {
   it('should set calibrationTarget for a valid playerId', () => {
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
+  });
+});
+
+describe('initHID', () => {
+  let consoleErrorSpy: any;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('should catch and log errors during HID initialization', () => {
+    const error = new Error('Mock HID Error');
+    vi.mocked(HID.devices).mockImplementation(() => {
+      throw error;
+    });
+
+    __initHIDForTest();
+    vi.advanceTimersByTime(1000);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('HID Initialization failed:', error);
   });
 });
