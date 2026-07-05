@@ -153,6 +153,8 @@ export const __getCalibrationTargetForTest = () => { return calibrationTarget; }
 export const __setCalibrationTargetForTest = (target: number | null) => { calibrationTarget = target; };
 export const __getPlayersForTest = () => players;
 export const __setPlayersForTest = (p: Player[]) => { players = p; };
+export const __getDeviceMapForTest = () => deviceMap;
+export const __updateDeviceMapForTest = updateDeviceMap;
 
 // Devices
 const DELCOM_VENDOR_ID = 0x0fc5;

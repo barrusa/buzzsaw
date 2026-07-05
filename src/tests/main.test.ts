@@ -69,10 +69,60 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __getDeviceMapForTest,
+  __updateDeviceMapForTest
 } from '../main.ts';
 
 import fs from 'fs';
+
+describe('updateDeviceMap', () => {
+  beforeEach(() => {
+    // Reset players array
+    __setPlayersForTest([
+      { id: 1, name: "Player 1", devicePath: null },
+      { id: 2, name: "Player 2", devicePath: null },
+      { id: 3, name: "Player 3", devicePath: null }
+    ]);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('clears existing devices and only adds players with valid devicePaths', () => {
+    // Initially updateDeviceMap is called in main.ts, let's manually populate to test clearing
+    __getDeviceMapForTest().set('stale_path', { id: 99, name: "Stale", devicePath: "stale_path" });
+
+    __setPlayersForTest([
+      { id: 1, name: "Player 1", devicePath: "path_1" },
+      { id: 2, name: "Player 2", devicePath: null }, // Should not be added
+      { id: 3, name: "Player 3", devicePath: "path_3" }
+    ]);
+
+    __updateDeviceMapForTest();
+
+    const map = __getDeviceMapForTest();
+    expect(map.size).toBe(2);
+    expect(map.has('stale_path')).toBe(false);
+    expect(map.get('path_1')).toEqual({ id: 1, name: "Player 1", devicePath: "path_1" });
+    expect(map.get('path_3')).toEqual({ id: 3, name: "Player 3", devicePath: "path_3" });
+  });
+
+  it('results in an empty map if no players have devicePaths', () => {
+    __getDeviceMapForTest().set('stale_path', { id: 99, name: "Stale", devicePath: "stale_path" });
+
+    __setPlayersForTest([
+      { id: 1, name: "Player 1", devicePath: null },
+      { id: 2, name: "Player 2", devicePath: null }
+    ]);
+
+    __updateDeviceMapForTest();
+
+    const map = __getDeviceMapForTest();
+    expect(map.size).toBe(0);
+  });
+});
 
 describe('updatePlayerNameHandler', () => {
   let mockEvent: Electron.IpcMainEvent;
