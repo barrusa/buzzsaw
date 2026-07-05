@@ -54,6 +54,51 @@ export const useAudio = (state: GameStateData) => {
 
 // --- Components ---
 
+const PlayerRow = ({ p, calibrationTarget }: { p: Player, calibrationTarget: number | null }) => {
+  const [localName, setLocalName] = useState(p.name);
+
+  useEffect(() => {
+    setLocalName(p.name);
+  }, [p.name]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (localName !== p.name) {
+        window.electronAPI.updatePlayerName(p.id, localName);
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [localName, p.id, p.name]);
+
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      <strong style={{ width: 80 }}>Player {p.id}:</strong>
+      <input
+        type="text"
+        value={localName}
+        onChange={(e) => setLocalName(e.target.value)}
+        placeholder="Enter Name"
+        style={{ padding: 5 }}
+      />
+      <button
+        onClick={() => window.electronAPI.startCalibration(p.id)}
+        disabled={calibrationTarget !== null}
+        style={{
+          backgroundColor: p.devicePath ? '#e0ffe0' : '#ffe0e0',
+          border: '1px solid #ccc',
+          cursor: 'pointer'
+        }}
+      >
+        {p.devicePath ? 'Mapped (Remap)' : 'Map Buzzer'}
+      </button>
+      <span style={{ fontSize: '0.8em', color: '#888' }}>
+        {p.devicePath ? '✓ Ready' : '• No Device'}
+      </span>
+    </div>
+  );
+};
+
 export const PlayerSetup = ({ players, calibrationTarget }: { players: Player[], calibrationTarget: number | null }) => {
   return (
     <div style={{ marginBottom: 20, padding: 15, border: '1px solid #ddd', borderRadius: 8, backgroundColor: '#f9f9f9' }}>
@@ -74,30 +119,7 @@ export const PlayerSetup = ({ players, calibrationTarget }: { players: Player[],
 
       <div style={{ display: 'grid', gap: 10 }}>
         {players.map(p => (
-          <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <strong style={{ width: 80 }}>Player {p.id}:</strong>
-            <input 
-              type="text" 
-              value={p.name} 
-              onChange={(e) => window.electronAPI.updatePlayerName(p.id, e.target.value)}
-              placeholder="Enter Name"
-              style={{ padding: 5 }}
-            />
-            <button 
-              onClick={() => window.electronAPI.startCalibration(p.id)}
-              disabled={calibrationTarget !== null}
-              style={{ 
-                backgroundColor: p.devicePath ? '#e0ffe0' : '#ffe0e0',
-                border: '1px solid #ccc',
-                cursor: 'pointer'
-              }}
-            >
-              {p.devicePath ? 'Mapped (Remap)' : 'Map Buzzer'}
-            </button>
-            <span style={{ fontSize: '0.8em', color: '#888' }}>
-              {p.devicePath ? '✓ Ready' : '• No Device'}
-            </span>
-          </div>
+          <PlayerRow key={p.id} p={p} calibrationTarget={calibrationTarget} />
         ))}
       </div>
     </div>
