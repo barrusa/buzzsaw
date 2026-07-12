@@ -1,30 +1,26 @@
 const { performance } = require('perf_hooks');
 
-const N = 10000;
-const M = 10000;
+const players = [];
+for (let i = 1; i <= 8; i++) {
+  players.push({ id: i, name: `Player ${i}`, devicePath: null });
+}
 
-const earlyBuzzers = Array.from({ length: N }, (_, i) => i);
-const buzzQueue = Array.from({ length: M }, (_, i) => ({ player: i + N/2, label: 'buzz' }));
+const target = 8;
 
-console.log(`Measuring with N=${N} earlyBuzzers and M=${M} buzzQueue items...`);
+// Find approach
+const startFind = performance.now();
+for (let i = 0; i < 10_000_000; i++) {
+  players.find(p => p.id === target);
+}
+const endFind = performance.now();
 
-// Baseline (Old approach) O(N*M)
-const startOld = performance.now();
-const resultOld = earlyBuzzers.filter(pid => !buzzQueue.some(b => b.player === pid));
-const endOld = performance.now();
-const oldTime = endOld - startOld;
+// Map approach
+const map = new Map(players.map(p => [p.id, p]));
+const startMap = performance.now();
+for (let i = 0; i < 10_000_000; i++) {
+  map.get(target);
+}
+const endMap = performance.now();
 
-// Optimized (New approach) O(N)
-const startNew = performance.now();
-const buzzedPlayerIds = new Set(buzzQueue.map(b => b.player));
-const resultNew = earlyBuzzers.filter(pid => !buzzedPlayerIds.has(pid));
-const endNew = performance.now();
-const newTime = endNew - startNew;
-
-console.log(`Baseline (O(N*M)): ${oldTime.toFixed(2)}ms`);
-console.log(`Optimized (O(N)): ${newTime.toFixed(2)}ms`);
-console.log(`Improvement: ${(oldTime / newTime).toFixed(2)}x faster`);
-
-// Verify correctness
-console.assert(resultOld.length === resultNew.length, "Results don't match!");
-console.assert(resultOld.every((v, i) => v === resultNew[i]), "Results don't match!");
+console.log(`Find: ${endFind - startFind}ms`);
+console.log(`Map: ${endMap - startMap}ms`);

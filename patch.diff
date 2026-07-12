@@ -1,0 +1,15 @@
+<<<<<<< SEARCH
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setCalibrationTargetForTest(null);
+  });
+=======
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setCalibrationTargetForTest(null);
+    __setPlayersForTest([
+      { id: 1, name: "Player 1", devicePath: null },
+      { id: 2, name: "Player 2", devicePath: null }
+    ]);
+  });
+>>>>>>> REPLACE
