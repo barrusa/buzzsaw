@@ -69,7 +69,10 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __getMainWindowForTest,
+  __setMainWindowForTest,
+  __setBoardWindowForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -379,6 +382,32 @@ describe('resetGame', () => {
 
     // clean up
     clearInterval(mockInterval);
+  });
+
+  it('broadcasts state via IPC to mainWindow', () => {
+    const mockSend = vi.fn();
+    const mockWin = { webContents: { send: mockSend } };
+    __setMainWindowForTest(mockWin);
+
+    resetGame();
+
+    expect(mockSend).toHaveBeenCalledWith('update-state', expect.any(Object));
+    expect(mockSend.mock.calls[0][1].gameState).toBe('IDLE');
+
+    __setMainWindowForTest(null);
+  });
+
+  it('broadcasts state via IPC to boardWindow', () => {
+    const mockSend = vi.fn();
+    const mockWin = { webContents: { send: mockSend } };
+    __setBoardWindowForTest(mockWin);
+
+    resetGame();
+
+    expect(mockSend).toHaveBeenCalledWith('update-state', expect.any(Object));
+    expect(mockSend.mock.calls[0][1].gameState).toBe('IDLE');
+
+    __setBoardWindowForTest(null);
   });
 });
 
