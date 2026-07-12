@@ -436,16 +436,24 @@ const setupDevice = (d: HID.Device) => {
 
     let lastState = false;
 
-    device.on('data', (data) => {
-       // Byte 3 check (from previous success)
-       const pressed = data.length > 3 && data[3] > 0;
-       if (pressed && !lastState && d.path) {
-         handleDeviceInput(d.path);
-       }
-       lastState = pressed;
-    });
+    const readLoop = () => {
+      device.read((err, data) => {
+        if (err) {
+          console.error('HID Error:', err);
+          return;
+        }
+        // Byte 3 check (from previous success)
+        const pressed = data.length > 3 && data[3] > 0;
+        if (pressed && !lastState && d.path) {
+          handleDeviceInput(d.path);
+        }
+        lastState = pressed;
 
-    device.on('error', (err) => console.error('HID Error:', err));
+        readLoop();
+      });
+    };
+
+    readLoop();
   } catch (e) {
     console.error(`Failed to open device at ${d.path}`, e);
   }
