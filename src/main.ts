@@ -483,3 +483,7 @@ app.on('ready', async () => {
 app.on('window-all-closed', () => {
   forceQuit();
 });
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});

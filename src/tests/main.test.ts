@@ -15,7 +15,7 @@ vi.mock('electron', () => {
         handlers.set(channel, handler);
       })
     },
-    globalShortcut: { register: vi.fn() }
+    globalShortcut: { register: vi.fn(), unregisterAll: vi.fn() }
   };
 });
 
