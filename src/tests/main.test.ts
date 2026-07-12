@@ -337,24 +337,15 @@ describe('handleBuzz', () => {
 });
 
 describe('forceQuit', () => {
-  let processKillSpy: any;
-
-  beforeEach(() => {
-    processKillSpy = vi.spyOn(process, 'kill').mockImplementation(() => { /* noop to prevent exiting tests */ });
-  });
-
-  afterEach(() => {
-    processKillSpy.mockRestore();
-  });
-
-  it('should save config synchronously and kill the process', async () => {
+  it('should save config synchronously, close HID devices and quit app cleanly', async () => {
     // We get the fs mock we created at the top of the file
     const fs = await import('fs');
+    const { app } = await import('electron');
 
     __forceQuitForTest();
 
     expect(fs.default.writeFileSync).toHaveBeenCalled();
-    expect(processKillSpy).toHaveBeenCalledWith(process.pid, 'SIGKILL');
+    expect(app.quit).toHaveBeenCalled();
   });
 });
 
