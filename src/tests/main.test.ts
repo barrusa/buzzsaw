@@ -63,6 +63,7 @@ import {
   __setTimerIntervalForTest,
   __getGameStateForTest,
   __forceQuitForTest,
+  TIMER_INTERVAL_MS,
   loadConfig,
   __getCalibrationTargetForTest,
   __setCalibrationTargetForTest,
@@ -364,7 +365,7 @@ describe('resetGame', () => {
     __setGameStateForTest('OPEN');
     __setBuzzQueueForTest([{ player: 1, timestamp: 900, delta: 0, label: '' }]);
     __setEarlyBuzzersForTest(new Set([1]));
-    const mockInterval = setInterval(() => {}, 1000);
+    const mockInterval = setInterval(() => { /* noop */ }, TIMER_INTERVAL_MS);
     __setTimerIntervalForTest(mockInterval);
 
     // Call resetGame
