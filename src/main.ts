@@ -463,14 +463,13 @@ ipcMain.on('quit-app', () => {
 // --- HID Setup (Event Mode - Restored) ---
 
 const getUniqueDelcoms = (devices: HID.Device[]): HID.Device[] => {
-  const delcoms = devices.filter(d => d.vendorId === DELCOM_VENDOR_ID && d.productId === DELCOM_PRODUCT_ID);
   const uniquePaths = new Set<string>();
 
-  return delcoms.filter(d => {
-      if (!d.path) return false;
-      if (uniquePaths.has(d.path)) return false;
-      uniquePaths.add(d.path);
-      return true;
+  return devices.filter(d => {
+    if (d.vendorId !== DELCOM_VENDOR_ID || d.productId !== DELCOM_PRODUCT_ID || !d.path) return false;
+    if (uniquePaths.has(d.path)) return false;
+    uniquePaths.add(d.path);
+    return true;
   });
 };
 
