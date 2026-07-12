@@ -134,6 +134,8 @@ export let buzzQueue: Buzz[] = [];
 export let earlyBuzzers: Set<number> = new Set();
 export let floorOpenTime = 0;
 export const PENALTY_TIME_MS = 250;
+export const TIMER_INTERVAL_MS = 1000;
+export const HID_INIT_DELAY_MS = 1000;
 let timerValue = 5;
 let timerInterval: NodeJS.Timeout | null = null;
 let calibrationTarget: number | null = null;
@@ -353,7 +355,7 @@ export const openFloor = () => {
       gameState = 'LOCKED';
     }
     broadcastState();
-  }, 1000);
+  }, TIMER_INTERVAL_MS);
 };
 
 ipcMain.on('open-floor', () => {
@@ -460,7 +462,7 @@ const initHID = () => {
     } catch (e) {
       console.error("HID Initialization failed:", e);
     }
-  }, 1000);
+  }, HID_INIT_DELAY_MS);
 };
 
 // --- App Lifecycle ---
