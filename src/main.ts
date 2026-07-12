@@ -131,6 +131,7 @@ interface Buzz {
 
 export let gameState: GameState = 'IDLE';
 export let buzzQueue: Buzz[] = [];
+export const buzzQueuePlayers = new Set<number>();
 export let earlyBuzzers: Set<number> = new Set();
 export let floorOpenTime = 0;
 export const PENALTY_TIME_MS = 250;
@@ -140,7 +141,11 @@ let calibrationTarget: number | null = null;
 
 // --- Expose for testing ---
 export const __setGameStateForTest = (state: GameState) => { gameState = state; };
-export const __setBuzzQueueForTest = (queue: Buzz[]) => { buzzQueue = queue; };
+export const __setBuzzQueueForTest = (queue: Buzz[]) => {
+  buzzQueue = queue;
+  buzzQueuePlayers.clear();
+  queue.forEach(b => buzzQueuePlayers.add(b.player));
+};
 export const __setEarlyBuzzersForTest = (buzzers: Set<number>) => { earlyBuzzers = buzzers; };
 export const __setFloorOpenTimeForTest = (time: number) => { floorOpenTime = time; };
 export const __getEarlyBuzzersForTest = () => { return earlyBuzzers; };
@@ -271,7 +276,7 @@ export const handleBuzz = (playerId: number) => {
       }
     }
 
-    if (buzzQueue.some(b => b.player === playerId)) return;
+    if (buzzQueuePlayers.has(playerId)) return;
 
     const isFirst = buzzQueue.length === 0;
     const delta = isFirst ? 0 : now - buzzQueue[0].timestamp;
@@ -282,6 +287,7 @@ export const handleBuzz = (playerId: number) => {
       delta: delta,
       label: isFirst ? '' : `+${Math.round(delta)} MS`
     });
+    buzzQueuePlayers.add(playerId);
     
     broadcastState();
   }
@@ -321,6 +327,7 @@ export const __forceQuitForTest = forceQuit;
 export const resetGame = () => {
   gameState = 'IDLE';
   buzzQueue = [];
+  buzzQueuePlayers.clear();
   earlyBuzzers.clear();
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
@@ -331,6 +338,7 @@ export const resetGame = () => {
 export const openFloor = () => {
   gameState = 'OPEN';
   buzzQueue = [];
+  buzzQueuePlayers.clear();
   floorOpenTime = performance.now();
   
   // Clear early buzzers after penalty time
