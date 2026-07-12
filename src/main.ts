@@ -38,6 +38,15 @@ let players: Player[] = [
   { id: 3, name: "Player 3", devicePath: null },
 ];
 
+const playerMap = new Map<number, Player>();
+const updatePlayerMap = () => {
+  playerMap.clear();
+  for (const player of players) {
+    playerMap.set(player.id, player);
+  }
+};
+updatePlayerMap();
+
 const deviceMap = new Map<string, Player>();
 
 const updateDeviceMap = () => {
@@ -78,6 +87,7 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
     const data = JSON.parse(fileContent);
     if (isValidConfigData(data)) {
       players = data.players;
+      updatePlayerMap();
       updateDeviceMap();
       return data;
     } else {
@@ -152,7 +162,10 @@ export const __setTimerIntervalForTest = (interval: NodeJS.Timeout | null) => { 
 export const __getCalibrationTargetForTest = () => { return calibrationTarget; };
 export const __setCalibrationTargetForTest = (target: number | null) => { calibrationTarget = target; };
 export const __getPlayersForTest = () => players;
-export const __setPlayersForTest = (p: Player[]) => { players = p; };
+export const __setPlayersForTest = (p: Player[]) => {
+  players = p;
+  updatePlayerMap();
+};
 
 // Devices
 const DELCOM_VENDOR_ID = 0x0fc5;
@@ -289,7 +302,7 @@ export const handleBuzz = (playerId: number) => {
 
 const handleDeviceInput = (devicePath: string) => {
   if (calibrationTarget !== null) {
-    const player = players.find(p => p.id === calibrationTarget);
+    const player = playerMap.get(calibrationTarget);
     if (player) {
       const existingPlayer = deviceMap.get(devicePath);
       if (existingPlayer) existingPlayer.devicePath = null;
@@ -374,7 +387,7 @@ export const updatePlayerNameHandler = (event: Electron.IpcMainEvent, payload: u
   // Basic string validation (length check)
   const sanitizedName = name.trim().slice(0, 50);
 
-  const p = players.find(player => player.id === id);
+  const p = playerMap.get(id);
   if (p) {
     p.name = sanitizedName;
     saveConfig();
@@ -386,7 +399,7 @@ ipcMain.on('update-player-name', updatePlayerNameHandler);
 
 ipcMain.on('start-calibration', (event, playerId) => {
   if (typeof playerId !== 'number') return;
-  if (!players.some(p => p.id === playerId)) return;
+  if (!playerMap.has(playerId)) return;
   calibrationTarget = playerId;
   broadcastState();
 });
@@ -398,7 +411,7 @@ ipcMain.on('cancel-calibration', () => {
 
 ipcMain.on('simulate-buzz', (event, playerId) => {
   if (typeof playerId !== 'number') return;
-  if (!players.some(p => p.id === playerId)) return;
+  if (!playerMap.has(playerId)) return;
   handleBuzz(playerId);
 });
 
