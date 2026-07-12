@@ -311,8 +311,17 @@ const handleDeviceInput = (devicePath: string) => {
 // --- Helper: Force Quit ---
 const forceQuit = () => {
   saveConfig(true);
-  // Nuclear option: Kill the process to prevent node-hid hangs
-  process.kill(process.pid, 'SIGKILL');
+
+  // Cleanly close all HID devices to prevent event loop hangs
+  for (const device of hidDevices) {
+    try {
+      device.close();
+    } catch (e) {
+      console.error('Error closing HID device during quit:', e);
+    }
+  }
+
+  app.quit();
 };
 export const __forceQuitForTest = forceQuit;
 
