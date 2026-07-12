@@ -56,45 +56,38 @@ export const useAudio = (state: GameStateData) => {
 
 export const PlayerSetup = ({ players, calibrationTarget }: { players: Player[], calibrationTarget: number | null }) => {
   return (
-    <div style={{ marginBottom: 20, padding: 15, border: '1px solid #ddd', borderRadius: 8, backgroundColor: '#f9f9f9' }}>
+    <div className="player-setup-container">
       <h3>Player Setup & Buzzer Mapping</h3>
-      <p style={{ fontSize: '0.9em', color: '#666' }}>
+      <p className="player-setup-instruction">
         Click "Map Buzzer" then press the physical button to assign it.
       </p>
       
       {calibrationTarget !== null && (
-        <div style={{ 
-          backgroundColor: '#ffeb3b', padding: 10, marginBottom: 10, borderRadius: 4, 
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-        }}>
+        <div className="calibration-alert">
           <strong>Press the buzzer for Player {calibrationTarget} now...</strong>
           <button onClick={() => window.electronAPI.cancelCalibration()}>Cancel</button>
         </div>
       )}
 
-      <div style={{ display: 'grid', gap: 10 }}>
+      <div className="player-grid">
         {players.map(p => (
-          <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <strong style={{ width: 80 }}>Player {p.id}:</strong>
+          <div key={p.id} className="player-row">
+            <strong className="player-label">Player {p.id}:</strong>
             <input 
               type="text" 
               value={p.name} 
               onChange={(e) => window.electronAPI.updatePlayerName(p.id, e.target.value)}
               placeholder="Enter Name"
-              style={{ padding: 5 }}
+              className="player-input"
             />
             <button 
               onClick={() => window.electronAPI.startCalibration(p.id)}
               disabled={calibrationTarget !== null}
-              style={{ 
-                backgroundColor: p.devicePath ? '#e0ffe0' : '#ffe0e0',
-                border: '1px solid #ccc',
-                cursor: 'pointer'
-              }}
+              className={`buzzer-btn ${p.devicePath ? 'buzzer-btn-mapped' : 'buzzer-btn-unmapped'}`}
             >
               {p.devicePath ? 'Mapped (Remap)' : 'Map Buzzer'}
             </button>
-            <span style={{ fontSize: '0.8em', color: '#888' }}>
+            <span className="device-status">
               {p.devicePath ? '✓ Ready' : '• No Device'}
             </span>
           </div>
