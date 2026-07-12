@@ -463,6 +463,8 @@ const initHID = () => {
   }, 1000);
 };
 
+export const __initHIDForTest = initHID;
+
 // --- App Lifecycle ---
 
 app.on('ready', async () => {
