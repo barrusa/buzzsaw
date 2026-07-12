@@ -10,7 +10,8 @@ import {
   __setFloorOpenTimeForTest,
   __getBuzzQueueForTest,
   __setBuzzQueueForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setLastConfigDataForTest
 } from './main';
 
 // Mocks setup
@@ -59,6 +60,17 @@ vi.mock('fs', () => ({
 describe('saveConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    __setLastConfigDataForTest(null);
+  });
+
+  it('should return early if the config data has not changed', () => {
+    saveConfig(true); // Initial save updates lastConfigData
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+
+    vi.clearAllMocks(); // Clear to test early return
+    saveConfig(true); // Should return early
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 
   it('should catch and log errors thrown by fs.writeFileSync', () => {

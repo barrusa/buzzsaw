@@ -79,6 +79,8 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
     if (isValidConfigData(data)) {
       players = data.players;
       updateDeviceMap();
+      // Initialize the cache to prevent immediate re-saving of identical state
+      lastConfigData = JSON.stringify(data, null, 2);
       return data;
     } else {
       console.error('Failed to load config: Invalid configuration format');
@@ -95,6 +97,8 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
   return null;
 };
 
+let lastConfigData: string | null = null;
+
 export const saveConfig = (sync = false) => {
   const config: ConfigData = {
     players,
@@ -103,6 +107,11 @@ export const saveConfig = (sync = false) => {
   };
 
   const data = JSON.stringify(config, null, 2);
+
+  if (data === lastConfigData) {
+    return;
+  }
+  lastConfigData = data;
 
   if (sync) {
     try {
@@ -324,6 +333,7 @@ const forceQuit = () => {
   app.quit();
 };
 export const __forceQuitForTest = forceQuit;
+export const __setLastConfigDataForTest = (data: string | null) => { lastConfigData = data; };
 
 // --- IPC Handlers ---
 
