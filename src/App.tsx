@@ -197,20 +197,25 @@ const ManualSimulation = ({ getPlayerName }: { getPlayerName: (id: number) => st
   </div>
 );
 
-export const HostWindow = () => {
-  const state = useGameState();
-  const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
-
+export const usePlayerName = (players: Player[] | undefined) => {
   const playerMap = React.useMemo(() => {
     const acc: Record<number, string> = {};
-    for (let i = 0; i < players.length; i++) {
-      const p = players[i];
+    const pList = players || [];
+    for (let i = 0; i < pList.length; i++) {
+      const p = pList[i];
       acc[p.id] = p.name;
     }
     return acc;
   }, [players]);
 
-  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
+  return (id: number) => playerMap[id] || `Player ${id}`;
+};
+
+export const HostWindow = () => {
+  const state = useGameState();
+  const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
+
+  const getPlayerName = usePlayerName(players);
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', maxWidth: 800, margin: '0 auto' }}>
@@ -230,17 +235,7 @@ export const BoardWindow = () => {
   
   const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
 
-  const playerMap = React.useMemo(() => {
-    const acc: Record<number, string> = {};
-    const pList = players || [];
-    for (let i = 0; i < pList.length; i++) {
-      const p = pList[i];
-      acc[p.id] = p.name;
-    }
-    return acc;
-  }, [players]);
-
-  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
+  const getPlayerName = usePlayerName(players);
   
   return (
     <div style={{ 
