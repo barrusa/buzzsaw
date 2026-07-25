@@ -71,7 +71,8 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setLastConfigDataForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -345,6 +346,10 @@ describe('handleBuzz', () => {
 });
 
 describe('forceQuit', () => {
+  beforeEach(() => {
+    __setLastConfigDataForTest(null);
+  });
+
   it('should save config synchronously, close HID devices and quit app cleanly', async () => {
     // We get the fs mock we created at the top of the file
     const fs = await import('fs');
@@ -454,6 +459,7 @@ describe("saveConfig", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
+    __setLastConfigDataForTest(null);
   });
 
   afterEach(() => {
@@ -539,5 +545,34 @@ describe('initHID', () => {
     vi.advanceTimersByTime(1000);
 
     expect(console.error).toHaveBeenCalledWith("HID Initialization failed:", expect.any(Error));
+  });
+});
+
+describe('quit-app IPC', () => {
+  let quitAppHandler: Function;
+
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    quitAppHandler = (globalThis as any).mockIpcHandlers.get('quit-app')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setLastConfigDataForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(quitAppHandler).toBeDefined();
+  });
+
+  it('should invoke forceQuit when called', async () => {
+    const fs = await import('fs');
+    const { app } = await import('electron');
+
+    quitAppHandler({});
+
+    expect(fs.default.writeFileSync).toHaveBeenCalled();
+    expect(app.quit).toHaveBeenCalled();
   });
 });
