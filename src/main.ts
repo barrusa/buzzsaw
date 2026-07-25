@@ -180,6 +180,7 @@ export const __setPlayersForTest = (p: Player[]) => {
   players = p;
   updatePlayerMap();
 };
+export const __setBoardWindowForTest = (bw: BrowserWindow | null) => { boardWindow = bw; };
 
 // Devices
 const DELCOM_VENDOR_ID = 0x0fc5;

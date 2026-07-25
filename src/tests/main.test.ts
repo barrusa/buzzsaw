@@ -9,7 +9,16 @@ vi.mock('electron', () => {
       on: vi.fn(),
       quit: vi.fn()
     },
-    BrowserWindow: vi.fn(),
+    BrowserWindow: vi.fn().mockImplementation(function() {
+      return {
+        loadURL: vi.fn(),
+        loadFile: vi.fn(),
+        on: vi.fn(),
+        getBounds: vi.fn(),
+        focus: vi.fn(),
+        webContents: { send: vi.fn() }
+      };
+    } as any),
     ipcMain: {
       on: vi.fn((channel, handler) => {
         handlers.set(channel, handler);
@@ -71,7 +80,9 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setLastConfigDataForTest,
+  __setBoardWindowForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -453,6 +464,7 @@ describe("saveConfig", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    __setLastConfigDataForTest(null);
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
   });
 
@@ -514,6 +526,56 @@ describe('start-calibration IPC Handler', () => {
   it('should set calibrationTarget for a valid playerId', () => {
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
+  });
+});
+
+describe('open-board-window IPC Handler', () => {
+  let openBoardWindowHandler: Function;
+
+  beforeAll(async () => {
+    (globalThis as any).MAIN_WINDOW_VITE_DEV_SERVER_URL = 'http://localhost:5173';
+    (globalThis as any).MAIN_WINDOW_VITE_NAME = 'main_window';
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    openBoardWindowHandler = (globalThis as any).mockIpcHandlers.get('open-board-window')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setBoardWindowForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(openBoardWindowHandler).toBeDefined();
+  });
+
+  it('should create board window if it does not exist', async () => {
+    const { BrowserWindow } = await import('electron');
+    openBoardWindowHandler();
+
+    expect(BrowserWindow).toHaveBeenCalledTimes(1);
+
+    // We expect boardWindow.loadURL to be called after instantiation.
+    const mockWindowInstance = vi.mocked(BrowserWindow).mock.results[0].value;
+    expect(mockWindowInstance.loadURL).toHaveBeenCalled();
+  });
+
+  it('should focus the board window if it already exists', async () => {
+    const { BrowserWindow } = await import('electron');
+    // First call creates it
+    openBoardWindowHandler();
+    expect(BrowserWindow).toHaveBeenCalledTimes(1);
+
+    // Get the instance created
+    const mockWindowInstance = vi.mocked(BrowserWindow).mock.results[0].value;
+
+    // Reset mock to trace second call
+    vi.mocked(BrowserWindow).mockClear();
+
+    // Second call should focus
+    openBoardWindowHandler();
+    expect(BrowserWindow).not.toHaveBeenCalled(); // No new window created
+    expect(mockWindowInstance.focus).toHaveBeenCalled();
   });
 });
 
