@@ -755,6 +755,7 @@ describe('open-board-window IPC Handler', () => {
     vi.mocked(BrowserWindow).mockClear();
 
     // Second call should focus
+<<<<<<< HEAD
     expect(mockWindowInstance.focus).toHaveBeenCalled();
   });
 });
@@ -778,3 +779,10 @@ describe('cancel-calibration IPC Handler', () => {
     expect(__getCalibrationTargetForTest()).toBeNull();
   });
 });
+=======
+    openBoardWindowHandler();
+    expect(BrowserWindow).not.toHaveBeenCalled(); // No new window created
+    expect(mockWindowInstance.focus).toHaveBeenCalled();
+  });
+});
+>>>>>>> origin/main
