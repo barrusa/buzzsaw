@@ -66,13 +66,15 @@ import {
   __initHIDForTest,
   loadConfig,
   saveConfig,
-  __setLastConfigDataForTest,
   __getCalibrationTargetForTest,
   __setCalibrationTargetForTest,
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setMainWindowForTest,
+  __setBoardWindowForTest,
+  __setLastConfigDataForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -476,12 +478,20 @@ describe("saveConfig", () => {
   it("should handle sync writeFileSync error", () => {
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
-    // Reset lastConfigData so that it tries to save
     __setLastConfigDataForTest(null);
+
+    // Remember old players to restore later
+    const oldPlayers = [{ id: 1, name: "Test Player", devicePath: "test/path" }]; // Default in tests
+
+    // Change a value so the cache doesn't skip writing
+    __setPlayersForTest([{ id: 999, name: 'Cache Buster', devicePath: null }]);
 
     saveConfig(true);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+
+    // Restore players
+    __setPlayersForTest(oldPlayers);
   });
 });
 
@@ -562,6 +572,65 @@ describe('start-calibration IPC Handler', () => {
   it('should set calibrationTarget for a valid playerId', () => {
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
+  });
+});
+
+describe('request-state IPC Handler', () => {
+  let requestStateHandler: Function;
+  let mockMainWindow: any;
+  let mockBoardWindow: any;
+
+  beforeAll(async () => {
+    await import('../main.ts');
+    requestStateHandler = (globalThis as any).mockIpcHandlers.get('request-state')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockMainWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+    mockBoardWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+
+    __setMainWindowForTest(mockMainWindow);
+    __setBoardWindowForTest(mockBoardWindow);
+  });
+
+  afterEach(() => {
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(requestStateHandler).toBeDefined();
+  });
+
+  it('should broadcast state to all windows', () => {
+    __setGameStateForTest('OPEN');
+    __setBuzzQueueForTest([{ player: 1, timestamp: 1000, delta: 0, label: '' }]);
+    __setEarlyBuzzersForTest(new Set([2]));
+    __setCalibrationTargetForTest(3);
+
+    requestStateHandler();
+
+    const expectedState = {
+      gameState: 'OPEN',
+      buzzQueue: [{ player: 1, timestamp: 1000, delta: 0, label: '' }],
+      earlyBuzzers: [2],
+      timer: __getTimerValueForTest(),
+      players: __getPlayersForTest(),
+      calibrationTarget: 3
+    };
+
+    expect(mockMainWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
+    expect(mockBoardWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
   });
 });
 
