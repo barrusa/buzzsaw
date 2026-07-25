@@ -524,6 +524,9 @@ export const __initHIDForTest = initHID;
 // --- App Lifecycle ---
 
 app.on('web-contents-created', (event, contents) => {
+  contents.on('will-navigate', (event) => {
+    event.preventDefault();
+  });
   contents.setWindowOpenHandler(() => {
     return { action: 'deny' };
   });
