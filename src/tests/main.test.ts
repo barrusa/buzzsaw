@@ -670,6 +670,47 @@ describe('initHID', () => {
   });
 });
 
+describe('App Security Navigation Checks', () => {
+  it('should prevent generic navigation via will-navigate listener', async () => {
+    // Reset modules to run main.ts side-effects again
+    vi.resetModules();
+    // Dynamic import
+    await import('../main.ts');
+
+    // Get the mock for app.on
+    const { app } = await import('electron');
+
+      // Find the web-contents-created listener
+      const webContentsCreatedCall = vi.mocked(app.on).mock.calls.find(call => call[0] === 'web-contents-created');
+      expect(webContentsCreatedCall).toBeDefined();
+
+      const webContentsCreatedHandler = webContentsCreatedCall![1];
+
+      const mockContents = {
+        on: vi.fn()
+      };
+
+      // Trigger the handler
+      webContentsCreatedHandler({} as any, mockContents as any);
+
+      // Find the will-navigate listener
+      const willNavigateCall = mockContents.on.mock.calls.find(call => call[0] === 'will-navigate');
+      expect(willNavigateCall).toBeDefined();
+
+      const willNavigateHandler = willNavigateCall![1];
+
+      const mockEvent = {
+        preventDefault: vi.fn()
+      };
+
+      // Trigger the handler
+      willNavigateHandler(mockEvent as any);
+
+      // Assert it prevented default
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+  });
+});
+
 describe('open-board-window IPC Handler', () => {
   let openBoardWindowHandler: Function;
 
