@@ -341,6 +341,7 @@ describe('handleBuzz', () => {
 
       expect(earlyBuzzers.size).toBe(0);
       expect(buzzQueue.length).toBe(0);
+    });
   });
 });
 
@@ -545,10 +546,8 @@ describe('initHID', () => {
   });
 });
 
-
 describe('App Security Navigation Checks', () => {
   it('should prevent generic navigation via will-navigate listener', async () => {
-    // Force a re-evaluation of main.ts to run app.on
     // Reset modules to run main.ts side-effects again
     vi.resetModules();
     // Dynamic import
@@ -581,10 +580,9 @@ describe('App Security Navigation Checks', () => {
       };
 
       // Trigger the handler
-      willNavigateHandler(mockEvent as any, 'http://malicious.com');
+      willNavigateHandler(mockEvent as any);
 
       // Assert it prevented default
       expect(mockEvent.preventDefault).toHaveBeenCalled();
-    });
   });
 });
