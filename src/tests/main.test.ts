@@ -480,9 +480,18 @@ describe("saveConfig", () => {
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
     __setLastConfigDataForTest(null);
 
+    // Remember old players to restore later
+    const oldPlayers = [{ id: 1, name: "Test Player", devicePath: "test/path" }]; // Default in tests
+
+    // Change a value so the cache doesn't skip writing
+    __setPlayersForTest([{ id: 999, name: 'Cache Buster', devicePath: null }]);
+
     saveConfig(true);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+
+    // Restore players
+    __setPlayersForTest(oldPlayers);
   });
 });
 
