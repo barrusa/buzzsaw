@@ -197,18 +197,22 @@ const ManualSimulation = ({ getPlayerName }: { getPlayerName: (id: number) => st
   </div>
 );
 
-export const HostWindow = () => {
-  const state = useGameState();
-  const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
-
+export const usePlayerName = (players: Player[] | undefined) => {
   const playerMap = React.useMemo(() => {
-    return players.reduce((acc, p) => {
+    return (players || []).reduce((acc, p) => {
       acc[p.id] = p.name;
       return acc;
     }, {} as Record<number, string>);
   }, [players]);
 
-  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
+  return (id: number) => playerMap[id] || `Player ${id}`;
+};
+
+export const HostWindow = () => {
+  const state = useGameState();
+  const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
+
+  const getPlayerName = usePlayerName(players);
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', maxWidth: 800, margin: '0 auto' }}>
@@ -228,14 +232,7 @@ export const BoardWindow = () => {
   
   const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
 
-  const playerMap = React.useMemo(() => {
-    return (players || []).reduce((acc, p) => {
-      acc[p.id] = p.name;
-      return acc;
-    }, {} as Record<number, string>);
-  }, [players]);
-
-  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
+  const getPlayerName = usePlayerName(players);
   
   return (
     <div style={{ 
