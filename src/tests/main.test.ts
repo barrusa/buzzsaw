@@ -758,10 +758,29 @@ describe('open-board-window IPC Handler', () => {
     // Reset mock to trace second call
     vi.mocked(BrowserWindow).mockClear();
 
-    // Second call should focus
     openBoardWindowHandler();
     expect(BrowserWindow).not.toHaveBeenCalled(); // No new window created
     expect(mockWindowInstance.focus).toHaveBeenCalled();
+  });
+});
+
+describe('cancel-calibration IPC Handler', () => {
+  let cancelCalibrationHandler: Function;
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    cancelCalibrationHandler = (globalThis as any).mockIpcHandlers.get('cancel-calibration')!;
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setCalibrationTargetForTest(1);
+  });
+  it('should find the handler', () => {
+    expect(cancelCalibrationHandler).toBeDefined();
+  });
+  it('should set calibrationTarget to null', () => {
+    cancelCalibrationHandler({});
+    expect(__getCalibrationTargetForTest()).toBeNull();
   });
 });
 
