@@ -202,10 +202,11 @@ export const HostWindow = () => {
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
 
   const playerMap = React.useMemo(() => {
-    return players.reduce((acc, p) => {
-      acc[p.id] = p.name;
-      return acc;
-    }, {} as Record<number, string>);
+    const map: Record<number, string> = {};
+    for (const p of (players || [])) {
+      map[p.id] = p.name;
+    }
+    return map;
   }, [players]);
 
   const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
@@ -229,10 +230,11 @@ export const BoardWindow = () => {
   const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
 
   const playerMap = React.useMemo(() => {
-    return (players || []).reduce((acc, p) => {
-      acc[p.id] = p.name;
-      return acc;
-    }, {} as Record<number, string>);
+    const map: Record<number, string> = {};
+    for (const p of (players || [])) {
+      map[p.id] = p.name;
+    }
+    return map;
   }, [players]);
 
   const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
