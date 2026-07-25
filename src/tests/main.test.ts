@@ -479,6 +479,8 @@ describe("saveConfig", () => {
   });
 
   it("should handle async writeFile rejection", async () => {
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
     const error = new Error("Write failed");
     vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
 
@@ -488,9 +490,12 @@ describe("saveConfig", () => {
     await Promise.resolve();
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+    __getPlayersForTest().pop();
   });
 
   it("should handle sync writeFileSync error", () => {
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 999, name: "temp", devicePath: null } as any);
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
     __setLastConfigDataForTest(null);
