@@ -81,8 +81,9 @@ import {
   __getPlayersForTest,
   __setPlayersForTest,
   PENALTY_TIME_MS,
-  __setLastConfigDataForTest,
-  __setBoardWindowForTest
+  __setMainWindowForTest,
+  __setBoardWindowForTest,
+  __setLastConfigDataForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -464,7 +465,6 @@ describe("saveConfig", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    __setLastConfigDataForTest(null);
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
   });
 
@@ -487,10 +487,20 @@ describe("saveConfig", () => {
   it("should handle sync writeFileSync error", () => {
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
+    __setLastConfigDataForTest(null);
+
+    // Remember old players to restore later
+    const oldPlayers = [{ id: 1, name: "Test Player", devicePath: "test/path" }]; // Default in tests
+
+    // Change a value so the cache doesn't skip writing
+    __setPlayersForTest([{ id: 999, name: 'Cache Buster', devicePath: null }]);
 
     saveConfig(true);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+
+    // Restore players
+    __setPlayersForTest(oldPlayers);
   });
 });
 
@@ -526,6 +536,90 @@ describe('start-calibration IPC Handler', () => {
   it('should set calibrationTarget for a valid playerId', () => {
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
+  });
+});
+
+describe('request-state IPC Handler', () => {
+  let requestStateHandler: Function;
+  let mockMainWindow: any;
+  let mockBoardWindow: any;
+
+  beforeAll(async () => {
+    await import('../main.ts');
+    requestStateHandler = (globalThis as any).mockIpcHandlers.get('request-state')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockMainWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+    mockBoardWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+
+    __setMainWindowForTest(mockMainWindow);
+    __setBoardWindowForTest(mockBoardWindow);
+  });
+
+  afterEach(() => {
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(requestStateHandler).toBeDefined();
+  });
+
+  it('should broadcast state to all windows', () => {
+    __setGameStateForTest('OPEN');
+    __setBuzzQueueForTest([{ player: 1, timestamp: 1000, delta: 0, label: '' }]);
+    __setEarlyBuzzersForTest(new Set([2]));
+    __setCalibrationTargetForTest(3);
+
+    requestStateHandler();
+
+    const expectedState = {
+      gameState: 'OPEN',
+      buzzQueue: [{ player: 1, timestamp: 1000, delta: 0, label: '' }],
+      earlyBuzzers: [2],
+      timer: __getTimerValueForTest(),
+      players: __getPlayersForTest(),
+      calibrationTarget: 3
+    };
+
+    expect(mockMainWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
+    expect(mockBoardWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
+  });
+});
+
+describe('initHID', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('should catch error when HID.devices() throws and log it', () => {
+    (HID.devices as any).mockImplementationOnce(() => {
+      throw new Error('Test HID Error');
+    });
+
+    __initHIDForTest();
+
+    // Fast-forward setTimeout
+    vi.advanceTimersByTime(1000);
+
+    expect(console.error).toHaveBeenCalledWith("HID Initialization failed:", expect.any(Error));
   });
 });
 
@@ -576,30 +670,5 @@ describe('open-board-window IPC Handler', () => {
     openBoardWindowHandler();
     expect(BrowserWindow).not.toHaveBeenCalled(); // No new window created
     expect(mockWindowInstance.focus).toHaveBeenCalled();
-  });
-});
-
-describe('initHID', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.useRealTimers();
-  });
-
-  it('should catch error when HID.devices() throws and log it', () => {
-    (HID.devices as any).mockImplementationOnce(() => {
-      throw new Error('Test HID Error');
-    });
-
-    __initHIDForTest();
-
-    // Fast-forward setTimeout
-    vi.advanceTimersByTime(1000);
-
-    expect(console.error).toHaveBeenCalledWith("HID Initialization failed:", expect.any(Error));
   });
 });
