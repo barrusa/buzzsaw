@@ -520,6 +520,12 @@ export const __initHIDForTest = initHID;
 
 // --- App Lifecycle ---
 
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-navigate', (event) => {
+    event.preventDefault();
+  });
+});
+
 app.on('ready', async () => {
   const config = await loadConfig();
   createMainWindow(config?.hostBounds);
