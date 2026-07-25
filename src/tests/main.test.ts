@@ -460,12 +460,14 @@ describe('loadConfig', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config:', error);
   });
 });
+
 describe("saveConfig", () => {
   let consoleErrorSpy: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
+    __setLastConfigDataForTest(null);
   });
 
   afterEach(() => {
