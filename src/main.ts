@@ -520,6 +520,12 @@ export const __initHIDForTest = initHID;
 
 // --- App Lifecycle ---
 
+app.on('web-contents-created', (event, contents) => {
+  contents.setWindowOpenHandler(() => {
+    return { action: 'deny' };
+  });
+});
+
 app.on('ready', async () => {
   const config = await loadConfig();
   createMainWindow(config?.hostBounds);

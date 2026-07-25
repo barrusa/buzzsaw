@@ -71,7 +71,8 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setLastConfigDataForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -453,6 +454,7 @@ describe("saveConfig", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    __setLastConfigDataForTest(null);
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
   });
 
