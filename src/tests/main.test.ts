@@ -9,7 +9,16 @@ vi.mock('electron', () => {
       on: vi.fn(),
       quit: vi.fn()
     },
-    BrowserWindow: vi.fn(),
+    BrowserWindow: vi.fn().mockImplementation(function() {
+      return {
+        loadURL: vi.fn(),
+        loadFile: vi.fn(),
+        on: vi.fn(),
+        getBounds: vi.fn(),
+        focus: vi.fn(),
+        webContents: { send: vi.fn() }
+      };
+    } as any),
     ipcMain: {
       on: vi.fn((channel, handler) => {
         handlers.set(channel, handler);
@@ -71,8 +80,10 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  __setLastConfigDataForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setMainWindowForTest,
+  __setBoardWindowForTest,
+  __setLastConfigDataForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -449,15 +460,14 @@ describe('loadConfig', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load config:', error);
   });
 });
+
 describe("saveConfig", () => {
-  beforeEach(() => {
-    __setLastConfigDataForTest(null);
-  });
   let consoleErrorSpy: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
+    __setLastConfigDataForTest(null);
   });
 
   afterEach(() => {
@@ -479,13 +489,68 @@ describe("saveConfig", () => {
   it("should handle sync writeFileSync error", () => {
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
+    __setLastConfigDataForTest(null);
+
+    // Remember old players to restore later
+    const oldPlayers = [{ id: 1, name: "Test Player", devicePath: "test/path" }]; // Default in tests
+
+    // Change a value so the cache doesn't skip writing
+    __setPlayersForTest([{ id: 999, name: 'Cache Buster', devicePath: null }]);
 
     saveConfig(true);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+
+    // Restore players
+    __setPlayersForTest(oldPlayers);
   });
 });
 
+
+
+describe('simulate-buzz IPC Handler', () => {
+  let simulateBuzzHandler: Function;
+
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    simulateBuzzHandler = (globalThis as any).mockIpcHandlers.get('simulate-buzz')!;
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const {
+      __setPlayersForTest,
+      __setGameStateForTest,
+      __setEarlyBuzzersForTest
+    } = await import('../main.ts');
+    __setPlayersForTest([{ id: 1, name: 'P1', devicePath: 'abc' } as any]);
+    __setGameStateForTest('IDLE');
+    __setEarlyBuzzersForTest(new Set());
+  });
+
+  it('should find the handler', () => {
+    expect(simulateBuzzHandler).toBeDefined();
+  });
+
+  it('should ignore non-number playerIds', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 'not-a-number');
+    expect(__getEarlyBuzzersForTest().size).toBe(0);
+  });
+
+  it('should ignore playerIds that do not exist in playerMap', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 999);
+    expect(__getEarlyBuzzersForTest().size).toBe(0);
+  });
+
+  it('should process buzz for a valid playerId', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 1); // 1 is a valid player id
+    expect(__getEarlyBuzzersForTest().has(1)).toBe(true);
+  });
+});
 
 describe('start-calibration IPC Handler', () => {
   let startCalibrationHandler: Function;
@@ -518,6 +583,65 @@ describe('start-calibration IPC Handler', () => {
   it('should set calibrationTarget for a valid playerId', () => {
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
+  });
+});
+
+describe('request-state IPC Handler', () => {
+  let requestStateHandler: Function;
+  let mockMainWindow: any;
+  let mockBoardWindow: any;
+
+  beforeAll(async () => {
+    await import('../main.ts');
+    requestStateHandler = (globalThis as any).mockIpcHandlers.get('request-state')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockMainWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+    mockBoardWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+
+    __setMainWindowForTest(mockMainWindow);
+    __setBoardWindowForTest(mockBoardWindow);
+  });
+
+  afterEach(() => {
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(requestStateHandler).toBeDefined();
+  });
+
+  it('should broadcast state to all windows', () => {
+    __setGameStateForTest('OPEN');
+    __setBuzzQueueForTest([{ player: 1, timestamp: 1000, delta: 0, label: '' }]);
+    __setEarlyBuzzersForTest(new Set([2]));
+    __setCalibrationTargetForTest(3);
+
+    requestStateHandler();
+
+    const expectedState = {
+      gameState: 'OPEN',
+      buzzQueue: [{ player: 1, timestamp: 1000, delta: 0, label: '' }],
+      earlyBuzzers: [2],
+      timer: __getTimerValueForTest(),
+      players: __getPlayersForTest(),
+      calibrationTarget: 3
+    };
+
+    expect(mockMainWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
+    expect(mockBoardWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
   });
 });
 
@@ -584,5 +708,55 @@ describe('App Security Navigation Checks', () => {
 
       // Assert it prevented default
       expect(mockEvent.preventDefault).toHaveBeenCalled();
+  });
+});
+
+describe('open-board-window IPC Handler', () => {
+  let openBoardWindowHandler: Function;
+
+  beforeAll(async () => {
+    (globalThis as any).MAIN_WINDOW_VITE_DEV_SERVER_URL = 'http://localhost:5173';
+    (globalThis as any).MAIN_WINDOW_VITE_NAME = 'main_window';
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    openBoardWindowHandler = (globalThis as any).mockIpcHandlers.get('open-board-window')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setBoardWindowForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(openBoardWindowHandler).toBeDefined();
+  });
+
+  it('should create board window if it does not exist', async () => {
+    const { BrowserWindow } = await import('electron');
+    openBoardWindowHandler();
+
+    expect(BrowserWindow).toHaveBeenCalledTimes(1);
+
+    // We expect boardWindow.loadURL to be called after instantiation.
+    const mockWindowInstance = vi.mocked(BrowserWindow).mock.results[0].value;
+    expect(mockWindowInstance.loadURL).toHaveBeenCalled();
+  });
+
+  it('should focus the board window if it already exists', async () => {
+    const { BrowserWindow } = await import('electron');
+    // First call creates it
+    openBoardWindowHandler();
+    expect(BrowserWindow).toHaveBeenCalledTimes(1);
+
+    // Get the instance created
+    const mockWindowInstance = vi.mocked(BrowserWindow).mock.results[0].value;
+
+    // Reset mock to trace second call
+    vi.mocked(BrowserWindow).mockClear();
+
+    // Second call should focus
+    openBoardWindowHandler();
+    expect(BrowserWindow).not.toHaveBeenCalled(); // No new window created
+    expect(mockWindowInstance.focus).toHaveBeenCalled();
   });
 });

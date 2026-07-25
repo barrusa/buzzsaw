@@ -188,6 +188,8 @@ const hidDevices: HID.HID[] = [];
 
 let mainWindow: BrowserWindow | null = null;
 let boardWindow: BrowserWindow | null = null;
+export const __setMainWindowForTest = (win: BrowserWindow | null) => { mainWindow = win; };
+export const __setBoardWindowForTest = (win: BrowserWindow | null) => { boardWindow = win; };
 
 // --- Window Management ---
 
@@ -353,6 +355,7 @@ const forceQuit = () => {
 };
 export const __forceQuitForTest = forceQuit;
 export const __setLastConfigDataForTest = (data: string | null) => { lastConfigData = data; };
+export const __getLastConfigDataForTest = () => { return lastConfigData; };
 
 // --- IPC Handlers ---
 
