@@ -357,6 +357,10 @@ describe('handleBuzz', () => {
 });
 
 describe('forceQuit', () => {
+  beforeEach(() => {
+    __setLastConfigDataForTest(null);
+  });
+
   it('should save config synchronously, close HID devices and quit app cleanly', async () => {
     // We get the fs mock we created at the top of the file
     const fs = await import('fs');
@@ -777,5 +781,34 @@ describe('cancel-calibration IPC Handler', () => {
   it('should set calibrationTarget to null', () => {
     cancelCalibrationHandler({});
     expect(__getCalibrationTargetForTest()).toBeNull();
+  });
+});
+
+describe('quit-app IPC', () => {
+  let quitAppHandler: Function;
+
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    quitAppHandler = (globalThis as any).mockIpcHandlers.get('quit-app')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setLastConfigDataForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(quitAppHandler).toBeDefined();
+  });
+
+  it('should invoke forceQuit when called', async () => {
+    const fs = await import('fs');
+    const { app } = await import('electron');
+
+    quitAppHandler({});
+
+    expect(fs.default.writeFileSync).toHaveBeenCalled();
+    expect(app.quit).toHaveBeenCalled();
   });
 });
