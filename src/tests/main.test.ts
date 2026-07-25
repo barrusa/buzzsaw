@@ -505,6 +505,51 @@ describe("saveConfig", () => {
 });
 
 
+
+describe('simulate-buzz IPC Handler', () => {
+  let simulateBuzzHandler: Function;
+
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    simulateBuzzHandler = (globalThis as any).mockIpcHandlers.get('simulate-buzz')!;
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const {
+      __setPlayersForTest,
+      __setGameStateForTest,
+      __setEarlyBuzzersForTest
+    } = await import('../main.ts');
+    __setPlayersForTest([{ id: 1, name: 'P1', devicePath: 'abc' } as any]);
+    __setGameStateForTest('IDLE');
+    __setEarlyBuzzersForTest(new Set());
+  });
+
+  it('should find the handler', () => {
+    expect(simulateBuzzHandler).toBeDefined();
+  });
+
+  it('should ignore non-number playerIds', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 'not-a-number');
+    expect(__getEarlyBuzzersForTest().size).toBe(0);
+  });
+
+  it('should ignore playerIds that do not exist in playerMap', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 999);
+    expect(__getEarlyBuzzersForTest().size).toBe(0);
+  });
+
+  it('should process buzz for a valid playerId', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 1); // 1 is a valid player id
+    expect(__getEarlyBuzzersForTest().has(1)).toBe(true);
+  });
+});
+
 describe('start-calibration IPC Handler', () => {
   let startCalibrationHandler: Function;
 
