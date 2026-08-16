@@ -361,15 +361,22 @@ describe('forceQuit', () => {
     __setLastConfigDataForTest(null);
   });
 
-  it('should save config synchronously, close HID devices and quit app cleanly', async () => {
+  it('should save config asynchronously, close HID devices and quit app cleanly', async () => {
     // We get the fs mock we created at the top of the file
     const fs = await import('fs');
     const { app } = await import('electron');
 
-    __forceQuitForTest();
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
 
-    expect(fs.default.writeFileSync).toHaveBeenCalled();
+    const promise = __forceQuitForTest();
+    await Promise.resolve(); // allow microtasks to flush
+    await promise;
+
+    expect((fs.default.promises.writeFile as any)).toHaveBeenCalled();
     expect(app.quit).toHaveBeenCalled();
+
+    __getPlayersForTest().pop();
   });
 });
 
@@ -484,34 +491,13 @@ describe("saveConfig", () => {
     const error = new Error("Write failed");
     vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
 
-    saveConfig(false);
+    saveConfig();
 
     // Let the rejected promise be handled
     await Promise.resolve();
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
     __getPlayersForTest().pop();
-  });
-
-  it("should handle sync writeFileSync error", () => {
-    // Mutate state so saveConfig actually writes
-    __getPlayersForTest().push({ id: 999, name: "temp", devicePath: null } as any);
-    const error = new Error("Sync write failed");
-    vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
-    __setLastConfigDataForTest(null);
-
-    // Remember old players to restore later
-    const oldPlayers = [{ id: 1, name: "Test Player", devicePath: "test/path" }]; // Default in tests
-
-    // Change a value so the cache doesn't skip writing
-    __setPlayersForTest([{ id: 999, name: 'Cache Buster', devicePath: null }]);
-
-    saveConfig(true);
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
-
-    // Restore players
-    __setPlayersForTest(oldPlayers);
   });
 });
 
@@ -811,9 +797,16 @@ describe('quit-app IPC', () => {
     const fs = await import('fs');
     const { app } = await import('electron');
 
-    quitAppHandler({});
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
 
-    expect(fs.default.writeFileSync).toHaveBeenCalled();
+    const promise = quitAppHandler({});
+    await Promise.resolve(); // allow microtasks to flush
+    await promise;
+
+    expect((fs.default.promises.writeFile as any)).toHaveBeenCalled();
     expect(app.quit).toHaveBeenCalled();
+
+    __getPlayersForTest().pop();
   });
 });

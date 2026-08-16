@@ -64,30 +64,12 @@ describe('saveConfig', () => {
   });
 
   it('should return early if the config data has not changed', () => {
-    saveConfig(true); // Initial save updates lastConfigData
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+    saveConfig(); // Initial save updates lastConfigData
+    expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
 
     vi.clearAllMocks(); // Clear to test early return
-    saveConfig(true); // Should return early
-    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    saveConfig(); // Should return early
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
-  });
-
-  it('should catch and log errors thrown by fs.writeFileSync', () => {
-    const error = new Error('Disk full');
-    (fs.writeFileSync as any).mockImplementationOnce(() => {
-      throw error;
-    });
-
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-      // Mock implementation to prevent actual console.error output during testing
-    });
-
-    saveConfig(true);
-
-    expect(fs.writeFileSync).toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save config:', error);
-    consoleErrorSpy.mockRestore();
   });
 });
 describe('loadConfig', () => {

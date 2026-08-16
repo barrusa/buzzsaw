@@ -109,7 +109,7 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
 
 let lastConfigData: string | null = null;
 
-export const saveConfig = (sync = false) => {
+export const saveConfig = () => {
   const config: ConfigData = {
     players,
     hostBounds: mainWindow?.getBounds(),
@@ -119,22 +119,14 @@ export const saveConfig = (sync = false) => {
   const data = JSON.stringify(config, null, 2);
 
   if (data === lastConfigData) {
-    return;
+    return Promise.resolve();
   }
   lastConfigData = data;
 
-  if (sync) {
-    try {
-      fs.writeFileSync(DATA_PATH, data);
-    } catch (e) {
+  return fs.promises.writeFile(DATA_PATH, data)
+    .catch((e) => {
       console.error('Failed to save config:', e);
-    }
-  } else {
-    fs.promises.writeFile(DATA_PATH, data)
-      .catch((e) => {
-        console.error('Failed to save config:', e);
-      });
-  }
+    });
 };
 
 // --- Game State & Logic ---
@@ -339,8 +331,8 @@ const handleDeviceInput = (devicePath: string) => {
 };
 
 // --- Helper: Force Quit ---
-const forceQuit = () => {
-  saveConfig(true);
+const forceQuit = async () => {
+  await saveConfig();
 
   // Cleanly close all HID devices to prevent event loop hangs
   for (const device of hidDevices) {
