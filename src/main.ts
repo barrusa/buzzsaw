@@ -415,13 +415,7 @@ export const updatePlayerNameHandler = (event: Electron.IpcMainEvent, payload: u
   if (typeof id !== 'number' || typeof name !== 'string') return;
 
   // Basic string validation (length check)
-  const escapedName = name
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-  const sanitizedName = escapedName.trim().slice(0, 50);
+  const sanitizedName = name.trim().slice(0, 50);
 
   const p = playerMap.get(id);
   if (p) {
