@@ -7,7 +7,7 @@ interface ElectronAPI {
   openFloor: () => void;
   resetGame: () => void;
   requestState: () => void;
-  onUpdateState: (callback: (state: GameStateData) => void) => void;
+  onUpdateState: (callback: (state: GameStateData) => void) => () => void;
   simulateBuzz: (playerId: number) => void;
   
   // New API
