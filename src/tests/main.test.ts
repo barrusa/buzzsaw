@@ -73,6 +73,7 @@ import {
   __getGameStateForTest,
   __forceQuitForTest,
   __initHIDForTest,
+  __setupDeviceForTest,
   loadConfig,
   saveConfig,
   __getCalibrationTargetForTest,
@@ -651,6 +652,34 @@ describe('request-state IPC Handler', () => {
 
     expect(mockMainWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
     expect(mockBoardWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
+  });
+});
+
+
+describe('setupDevice', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should return early if device path is undefined', () => {
+    const mockDevice = { vendorId: 1, productId: 2, path: undefined };
+    __setupDeviceForTest(mockDevice);
+    expect(HID.HID).not.toHaveBeenCalled();
+  });
+
+  it('should catch error when new HID.HID throws and log it', () => {
+    (HID.HID as any).mockImplementationOnce(function() {
+      throw new Error('Test Error from new HID.HID');
+    });
+
+    const mockDevice = { vendorId: 1, productId: 2, path: '/dev/hidraw1' };
+    __setupDeviceForTest(mockDevice);
+
+    expect(console.error).toHaveBeenCalledWith(`Failed to open device at /dev/hidraw1`, expect.any(Error));
   });
 });
 

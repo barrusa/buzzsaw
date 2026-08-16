@@ -520,6 +520,7 @@ const initHID = () => {
 };
 
 export const __initHIDForTest = initHID;
+export const __setupDeviceForTest = setupDevice;
 
 // --- App Lifecycle ---
 
