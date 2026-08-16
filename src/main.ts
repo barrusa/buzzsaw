@@ -407,6 +407,14 @@ ipcMain.on('reset-game', () => {
   resetGame();
 });
 
+const HTML_ENTITIES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+};
+
 export const updatePlayerNameHandler = (event: Electron.IpcMainEvent, payload: unknown) => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return;
   const { id, name } = payload as { id: unknown, name: unknown };
@@ -415,12 +423,7 @@ export const updatePlayerNameHandler = (event: Electron.IpcMainEvent, payload: u
   if (typeof id !== 'number' || typeof name !== 'string') return;
 
   // Basic string validation (length check)
-  const escapedName = name
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  const escapedName = name.replace(/[&<>"']/g, match => HTML_ENTITIES[match]);
   const sanitizedName = escapedName.trim().slice(0, 50);
 
   const p = playerMap.get(id);
