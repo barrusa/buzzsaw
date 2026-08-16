@@ -104,7 +104,7 @@ describe('loadConfig', () => {
   });
 
   it('should return null when the config file does not exist', async () => {
-    const error: any = new Error('ENOENT: no such file or directory');
+    const error = new Error('ENOENT: no such file or directory') as NodeJS.ErrnoException;
     error.code = 'ENOENT';
     vi.mocked(fs.promises.readFile).mockRejectedValueOnce(error);
 
