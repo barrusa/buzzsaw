@@ -4,6 +4,7 @@ import TimerSection from './components/TimerSection';
 import StateText from './components/StateText';
 import PenaltyDisplay from './components/PenaltyDisplay';
 import BuzzQueueDisplay from './components/BuzzQueueDisplay';
+import PlayerRow from './components/PlayerRow';
 
 const useGameState = () => {
   const [state, setState] = useState<GameStateData>({
@@ -71,26 +72,11 @@ export const PlayerSetup = ({ players, calibrationTarget }: { players: Player[],
 
       <div className="player-grid">
         {players.map(p => (
-          <div key={p.id} className="player-row">
-            <strong className="player-label">Player {p.id}:</strong>
-            <input 
-              type="text" 
-              value={p.name} 
-              onChange={(e) => window.electronAPI.updatePlayerName(p.id, e.target.value)}
-              placeholder="Enter Name"
-              className="player-input"
-            />
-            <button 
-              onClick={() => window.electronAPI.startCalibration(p.id)}
-              disabled={calibrationTarget !== null}
-              className={`buzzer-btn ${p.devicePath ? 'buzzer-btn-mapped' : 'buzzer-btn-unmapped'}`}
-            >
-              {p.devicePath ? 'Mapped (Remap)' : 'Map Buzzer'}
-            </button>
-            <span className="device-status">
-              {p.devicePath ? '✓ Ready' : '• No Device'}
-            </span>
-          </div>
+          <PlayerRow
+            key={p.id}
+            player={p}
+            calibrationTarget={calibrationTarget}
+          />
         ))}
       </div>
     </div>
