@@ -473,12 +473,18 @@ describe("saveConfig", () => {
   });
 
   it("should handle sync writeFileSync error", () => {
+    // Reset lastConfigData to force saveConfig to actually write
+    __setPlayersForTest([{ id: 999, name: 'Force Update', devicePath: null }]);
+
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
 
     saveConfig(true);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+
+    // Reset players for subsequent tests
+    __setPlayersForTest([]);
   });
 });
 
@@ -512,6 +518,7 @@ describe('start-calibration IPC Handler', () => {
   });
 
   it('should set calibrationTarget for a valid playerId', () => {
+    __setPlayersForTest([{ id: 1, name: 'Player 1', devicePath: null }]);
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
   });

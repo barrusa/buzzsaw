@@ -32,13 +32,30 @@ describe('HostWindow', () => {
     render(<HostWindow />);
   };
 
-  it('renders default state correctly', () => {
-    renderComponent();
-    expect(screen.getByText('Host Console')).toBeTruthy();
-    expect(screen.getByText('IDLE')).toBeTruthy();
-    expect(screen.getByText('5s')).toBeTruthy();
-    expect(screen.getByText('Waiting for buzz...')).toBeTruthy();
-    expect(screen.getByText('None')).toBeTruthy();
+  describe('renders default state correctly', () => {
+    beforeEach(() => {
+      renderComponent();
+    });
+
+    it('renders Host Console', () => {
+      expect(screen.getByText('Host Console')).toBeTruthy();
+    });
+
+    it('renders IDLE state', () => {
+      expect(screen.getByText('IDLE')).toBeTruthy();
+    });
+
+    it('renders 5s timer', () => {
+      expect(screen.getByText('5s')).toBeTruthy();
+    });
+
+    it('renders Waiting for buzz...', () => {
+      expect(screen.getByText('Waiting for buzz...')).toBeTruthy();
+    });
+
+    it('renders None', () => {
+      expect(screen.getByText('None')).toBeTruthy();
+    });
   });
 
   it('calls openBoardWindow when Focus Board is clicked', () => {
