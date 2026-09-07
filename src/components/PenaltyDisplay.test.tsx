@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import PenaltyDisplay from '../components/PenaltyDisplay';
+import PenaltyDisplay from './PenaltyDisplay';
 
 describe('PenaltyDisplay', () => {
   const mockGetPlayerName = (id: number) => `Player ${id}`;

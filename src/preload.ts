@@ -18,7 +18,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Main -> Renderers
   onUpdateState: (callback: (state: GameStateData) => void) => {
-    ipcRenderer.on('update-state', (_event, state) => callback(state));
+    const listener = (_event: Electron.IpcRendererEvent, state: GameStateData) => callback(state);
+    ipcRenderer.on('update-state', listener);
+    return () => ipcRenderer.removeListener('update-state', listener);
   },
   
   // Simulation

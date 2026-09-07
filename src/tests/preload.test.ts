@@ -8,6 +8,7 @@ vi.mock('electron', () => ({
   ipcRenderer: {
     send: vi.fn(),
     on: vi.fn(),
+    removeListener: vi.fn(),
   },
 }));
 
@@ -79,9 +80,9 @@ describe('preload.ts', () => {
     expect(ipcRenderer.send).toHaveBeenCalledWith('simulate-buzz', 3);
   });
 
-  it('registers update-state listener and calls callback with state when onUpdateState is called', () => {
+  it('registers update-state listener and calls callback with state when onUpdateState is called, and returns a cleanup function', () => {
     const callback = vi.fn();
-    electronAPI.onUpdateState(callback);
+    const cleanup = electronAPI.onUpdateState(callback) as () => void;
 
     expect(ipcRenderer.on).toHaveBeenCalledWith('update-state', expect.any(Function));
 
@@ -91,5 +92,10 @@ describe('preload.ts', () => {
     // Simulate ipc event
     registeredCallback({} as IpcRendererEvent, mockState);
     expect(callback).toHaveBeenCalledWith(mockState);
+
+    // Test cleanup function
+    expect(typeof cleanup).toBe('function');
+    cleanup();
+    expect(ipcRenderer.removeListener).toHaveBeenCalledWith('update-state', registeredCallback);
   });
 });

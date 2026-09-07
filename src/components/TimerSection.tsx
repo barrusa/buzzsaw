@@ -6,6 +6,18 @@ interface TimerSectionProps {
 }
 
 const TimerSection: React.FC<TimerSectionProps> = ({ timer, gameState }) => {
+  const getTimerColor = () => {
+    if (timer === 0) return '#ff4444';
+    if (gameState === 'OPEN') return '#ffffff';
+    return '#aaaaaa';
+  };
+
+  const getSegmentColor = (isActive: boolean) => {
+    if (!isActive) return 'rgba(0,0,0,0.3)';
+    if (gameState === 'OPEN') return '#ffffff';
+    return '#aaaaaa';
+  };
+
   return (
     <div style={{
       marginTop: 0,
@@ -32,9 +44,7 @@ const TimerSection: React.FC<TimerSectionProps> = ({ timer, gameState }) => {
               style={{
                 width: 60,
                 height: 100,
-                backgroundColor: isActive
-                  ? (gameState === 'OPEN' ? '#ffffff' : '#aaaaaa')
-                  : 'rgba(0,0,0,0.3)',
+                backgroundColor: getSegmentColor(isActive),
                 border: '4px solid #000',
                 borderRadius: 4,
                 boxShadow: isActive ? '0 0 20px rgba(255,255,255,0.5), inset 0 0 10px rgba(0,0,0,0.2)' : 'none',
@@ -51,7 +61,7 @@ const TimerSection: React.FC<TimerSectionProps> = ({ timer, gameState }) => {
         fontWeight: 'bold',
         lineHeight: 1,
         fontFamily: "'Oswald', sans-serif",
-        color: timer === 0 ? '#ff4444' : (gameState === 'OPEN' ? '#ffffff' : '#aaaaaa'),
+        color: getTimerColor(),
         textShadow: '4px 4px 0px #000000',
         minWidth: '100px',
         textAlign: 'left',

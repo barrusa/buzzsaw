@@ -9,13 +9,22 @@ vi.mock('electron', () => {
       on: vi.fn(),
       quit: vi.fn()
     },
-    BrowserWindow: vi.fn(),
+    BrowserWindow: vi.fn().mockImplementation(function() {
+      return {
+        loadURL: vi.fn(),
+        loadFile: vi.fn(),
+        on: vi.fn(),
+        getBounds: vi.fn(),
+        focus: vi.fn(),
+        webContents: { send: vi.fn() }
+      };
+    } as any),
     ipcMain: {
       on: vi.fn((channel, handler) => {
         handlers.set(channel, handler);
       })
     },
-    globalShortcut: { register: vi.fn() }
+    globalShortcut: { register: vi.fn(), unregisterAll: vi.fn() }
   };
 });
 
@@ -63,16 +72,23 @@ import {
   __setTimerIntervalForTest,
   __getGameStateForTest,
   __forceQuitForTest,
+  __initHIDForTest,
+  __setupDeviceForTest,
   loadConfig,
+  saveConfig,
   __getCalibrationTargetForTest,
   __setCalibrationTargetForTest,
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setMainWindowForTest,
+  __setBoardWindowForTest,
+  __setLastConfigDataForTest
 } from '../main.ts';
 
 import fs from 'fs';
+import HID from 'node-hid';
 
 describe('updatePlayerNameHandler', () => {
   let mockEvent: Electron.IpcMainEvent;
@@ -117,6 +133,11 @@ describe('updatePlayerNameHandler', () => {
     const longName = 'A'.repeat(60);
     updatePlayerNameHandler(mockEvent, { id: 2, name: longName });
     expect(__getPlayersForTest()[1].name).toBe('A'.repeat(50));
+  });
+
+  it('does not escape HTML characters in the name since React handles it', () => {
+    updatePlayerNameHandler(mockEvent, { id: 1, name: '<script>a("test & \'")</script>' });
+    expect(__getPlayersForTest()[0].name).toBe('<script>a("test & \'")</script>');
   });
 
   it('does nothing if player id is not found', () => {
@@ -337,24 +358,19 @@ describe('handleBuzz', () => {
 });
 
 describe('forceQuit', () => {
-  let processKillSpy: any;
-
   beforeEach(() => {
-    processKillSpy = vi.spyOn(process, 'kill').mockImplementation(() => { /* noop to prevent exiting tests */ });
+    __setLastConfigDataForTest(null);
   });
 
-  afterEach(() => {
-    processKillSpy.mockRestore();
-  });
-
-  it('should save config synchronously and kill the process', async () => {
+  it('should save config synchronously, close HID devices and quit app cleanly', async () => {
     // We get the fs mock we created at the top of the file
     const fs = await import('fs');
+    const { app } = await import('electron');
 
     __forceQuitForTest();
 
     expect(fs.default.writeFileSync).toHaveBeenCalled();
-    expect(processKillSpy).toHaveBeenCalledWith(process.pid, 'SIGKILL');
+    expect(app.quit).toHaveBeenCalled();
   });
 });
 
@@ -450,6 +466,128 @@ describe('loadConfig', () => {
   });
 });
 
+describe("saveConfig", () => {
+  let consoleErrorSpy: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { /* noop */ });
+    __setLastConfigDataForTest(null);
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("should handle async writeFile rejection", async () => {
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
+    const error = new Error("Write failed");
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
+
+    saveConfig(false);
+
+    // Let the rejected promise be handled
+    await Promise.resolve();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+    __getPlayersForTest().pop();
+  });
+
+  it("should handle async writeFile rejection", async () => {
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
+    const error = new Error("Write failed");
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
+
+    saveConfig(false);
+
+    // Let the rejected promise be handled
+    await Promise.resolve();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+    __getPlayersForTest().pop();
+  });
+
+  it("should save config asynchronously when sync is false and succeed", async () => {
+    __getPlayersForTest().push({ id: 997, name: 'Async Writer', devicePath: null } as any);
+    vi.mocked(fs.promises.writeFile).mockResolvedValueOnce();
+
+    saveConfig(false);
+
+    expect(fs.promises.writeFile).toHaveBeenCalled();
+    __getPlayersForTest().pop();
+  });
+
+
+  it("should handle sync writeFileSync error", () => {
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 999, name: "temp", devicePath: null } as any);
+    const error = new Error("Sync write failed");
+    vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
+    __setLastConfigDataForTest(null);
+
+    // Remember old players to restore later
+    const oldPlayers = [{ id: 1, name: "Test Player", devicePath: "test/path" }]; // Default in tests
+
+    // Change a value so the cache doesn't skip writing
+    __setPlayersForTest([{ id: 999, name: 'Cache Buster', devicePath: null }]);
+
+    saveConfig(true);
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+
+    // Restore players
+    __setPlayersForTest(oldPlayers);
+  });
+});
+
+
+
+describe('simulate-buzz IPC Handler', () => {
+  let simulateBuzzHandler: Function;
+
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    simulateBuzzHandler = (globalThis as any).mockIpcHandlers.get('simulate-buzz')!;
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const {
+      __setPlayersForTest,
+      __setGameStateForTest,
+      __setEarlyBuzzersForTest
+    } = await import('../main.ts');
+    __setPlayersForTest([{ id: 1, name: 'P1', devicePath: 'abc' } as any]);
+    __setGameStateForTest('IDLE');
+    __setEarlyBuzzersForTest(new Set());
+  });
+
+  it('should find the handler', () => {
+    expect(simulateBuzzHandler).toBeDefined();
+  });
+
+  it('should ignore non-number playerIds', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 'not-a-number');
+    expect(__getEarlyBuzzersForTest().size).toBe(0);
+  });
+
+  it('should ignore playerIds that do not exist in playerMap', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 999);
+    expect(__getEarlyBuzzersForTest().size).toBe(0);
+  });
+
+  it('should process buzz for a valid playerId', async () => {
+    const { __getEarlyBuzzersForTest } = await import('../main.ts');
+    simulateBuzzHandler({}, 1); // 1 is a valid player id
+    expect(__getEarlyBuzzersForTest().has(1)).toBe(true);
+  });
+});
+
 describe('start-calibration IPC Handler', () => {
   let startCalibrationHandler: Function;
 
@@ -481,5 +619,260 @@ describe('start-calibration IPC Handler', () => {
   it('should set calibrationTarget for a valid playerId', () => {
     startCalibrationHandler({}, 1); // 1 is a valid player id
     expect(__getCalibrationTargetForTest()).toBe(1);
+  });
+});
+
+describe('request-state IPC Handler', () => {
+  let requestStateHandler: Function;
+  let mockMainWindow: any;
+  let mockBoardWindow: any;
+
+  beforeAll(async () => {
+    await import('../main.ts');
+    requestStateHandler = (globalThis as any).mockIpcHandlers.get('request-state')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockMainWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+    mockBoardWindow = {
+      webContents: {
+        send: vi.fn()
+      }
+    };
+
+    __setMainWindowForTest(mockMainWindow);
+    __setBoardWindowForTest(mockBoardWindow);
+  });
+
+  afterEach(() => {
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(requestStateHandler).toBeDefined();
+  });
+
+  it('should broadcast state to all windows', () => {
+    __setGameStateForTest('OPEN');
+    __setBuzzQueueForTest([{ player: 1, timestamp: 1000, delta: 0, label: '' }]);
+    __setEarlyBuzzersForTest(new Set([2]));
+    __setCalibrationTargetForTest(3);
+
+    requestStateHandler();
+
+    const expectedState = {
+      gameState: 'OPEN',
+      buzzQueue: [{ player: 1, timestamp: 1000, delta: 0, label: '' }],
+      earlyBuzzers: [2],
+      timer: __getTimerValueForTest(),
+      players: __getPlayersForTest(),
+      calibrationTarget: 3
+    };
+
+    expect(mockMainWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
+    expect(mockBoardWindow.webContents.send).toHaveBeenCalledWith('update-state', expectedState);
+  });
+});
+
+
+describe('setupDevice', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should return early if device path is undefined', () => {
+    const mockDevice = { vendorId: 1, productId: 2, path: undefined };
+    __setupDeviceForTest(mockDevice);
+    expect(HID.HID).not.toHaveBeenCalled();
+  });
+
+  it('should catch error when new HID.HID throws and log it', () => {
+    (HID.HID as any).mockImplementationOnce(function() {
+      throw new Error('Test Error from new HID.HID');
+    });
+
+    const mockDevice = { vendorId: 1, productId: 2, path: '/dev/hidraw1' };
+    __setupDeviceForTest(mockDevice);
+
+    expect(console.error).toHaveBeenCalledWith(`Failed to open device at /dev/hidraw1`, expect.any(Error));
+  });
+});
+
+describe('initHID', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('should catch error when HID.devices() throws and log it', () => {
+    (HID.devices as any).mockImplementationOnce(() => {
+      throw new Error('Test HID Error');
+    });
+
+    __initHIDForTest();
+
+    // Fast-forward setTimeout
+    vi.advanceTimersByTime(1000);
+
+    expect(console.error).toHaveBeenCalledWith("HID Initialization failed:", expect.any(Error));
+  });
+});
+
+describe('App Security Navigation Checks', () => {
+  it('should prevent generic navigation via will-navigate listener', async () => {
+    // Reset modules to run main.ts side-effects again
+    vi.resetModules();
+    // Dynamic import
+    await import('../main.ts');
+
+    // Get the mock for app.on
+    const { app } = await import('electron');
+
+      // Find the web-contents-created listener
+      const webContentsCreatedCall = vi.mocked(app.on).mock.calls.find(call => call[0] === 'web-contents-created');
+      expect(webContentsCreatedCall).toBeDefined();
+
+      const webContentsCreatedHandler = webContentsCreatedCall![1];
+
+      const mockContents = {
+        on: vi.fn(),
+        setWindowOpenHandler: vi.fn()
+      };
+
+      // Trigger the handler
+      webContentsCreatedHandler({} as any, mockContents as any);
+
+      // Find the will-navigate listener
+      const willNavigateCall = mockContents.on.mock.calls.find(call => call[0] === 'will-navigate');
+      expect(willNavigateCall).toBeDefined();
+
+      const willNavigateHandler = willNavigateCall![1];
+
+      const mockEvent = {
+        preventDefault: vi.fn()
+      };
+
+      // Trigger the handler
+      willNavigateHandler(mockEvent as any);
+
+      // Assert it prevented default
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+  });
+});
+
+describe('open-board-window IPC Handler', () => {
+  let openBoardWindowHandler: Function;
+
+  beforeAll(async () => {
+    (globalThis as any).MAIN_WINDOW_VITE_DEV_SERVER_URL = 'http://localhost:5173';
+    (globalThis as any).MAIN_WINDOW_VITE_NAME = 'main_window';
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    openBoardWindowHandler = (globalThis as any).mockIpcHandlers.get('open-board-window')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setBoardWindowForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(openBoardWindowHandler).toBeDefined();
+  });
+
+  it('should create board window if it does not exist', async () => {
+    const { BrowserWindow } = await import('electron');
+    openBoardWindowHandler();
+
+    expect(BrowserWindow).toHaveBeenCalledTimes(1);
+
+    // We expect boardWindow.loadURL to be called after instantiation.
+    const mockWindowInstance = vi.mocked(BrowserWindow).mock.results[0].value;
+    expect(mockWindowInstance.loadURL).toHaveBeenCalled();
+  });
+
+  it('should focus the board window if it already exists', async () => {
+    const { BrowserWindow } = await import('electron');
+    const mockFocus = vi.fn();
+    const { __setBoardWindowForTest } = await import('../main.ts');
+    __setBoardWindowForTest({ focus: mockFocus } as any);
+
+    vi.mocked(BrowserWindow).mockClear();
+
+    openBoardWindowHandler();
+    expect(vi.mocked(BrowserWindow)).not.toHaveBeenCalled(); // No new window created
+    expect(mockFocus).toHaveBeenCalled();
+  });
+});
+
+describe('cancel-calibration IPC Handler', () => {
+  let cancelCalibrationHandler: Function;
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    cancelCalibrationHandler = (globalThis as any).mockIpcHandlers.get('cancel-calibration')!;
+  });
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { __setCalibrationTargetForTest, __setMainWindowForTest, __setBoardWindowForTest } = await import('../main.ts');
+    __setCalibrationTargetForTest(1 as any);
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
+  });
+  it('should find the handler', () => {
+    expect(cancelCalibrationHandler).toBeDefined();
+  });
+  it('should set calibrationTarget to null', async () => {
+    const { __getCalibrationTargetForTest } = await import('../main.ts');
+    cancelCalibrationHandler({});
+    expect(__getCalibrationTargetForTest()).toBeNull();
+  });
+});
+
+describe('quit-app IPC', () => {
+  let quitAppHandler: Function;
+
+  beforeAll(async () => {
+    // Ensure the module is imported to register handlers
+    await import('../main.ts');
+    quitAppHandler = (globalThis as any).mockIpcHandlers.get('quit-app')!;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    __setLastConfigDataForTest(null);
+  });
+
+  it('should find the handler', () => {
+    expect(quitAppHandler).toBeDefined();
+  });
+
+  it('should invoke forceQuit when called', async () => {
+    const fs = await import('fs');
+    const { app } = await import('electron');
+    const { __setMainWindowForTest, __setBoardWindowForTest } = await import('../main.ts');
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
+
+    quitAppHandler({});
+
+    expect(fs.default.writeFileSync).toHaveBeenCalled();
+    expect(app.quit).toHaveBeenCalled();
   });
 });

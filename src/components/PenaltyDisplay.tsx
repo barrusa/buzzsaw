@@ -7,7 +7,7 @@ interface PenaltyDisplayProps {
 }
 
 const PenaltyDisplay: React.FC<PenaltyDisplayProps> = ({ earlyBuzzers, buzzQueue, getPlayerName }) => {
-  const buzzedPlayerIds = useMemo(() => new Set(buzzQueue.map(b => b.player)), [buzzQueue]);
+  const buzzedPlayerIds = useMemo(() => buzzQueue.reduce((set, b) => set.add(b.player), new Set<number>()), [buzzQueue]);
 
   return (
     <>

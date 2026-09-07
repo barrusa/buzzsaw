@@ -38,6 +38,15 @@ let players: Player[] = [
   { id: 3, name: "Player 3", devicePath: null },
 ];
 
+const playerMap = new Map<number, Player>();
+const updatePlayerMap = () => {
+  playerMap.clear();
+  for (const player of players) {
+    playerMap.set(player.id, player);
+  }
+};
+updatePlayerMap();
+
 const deviceMap = new Map<string, Player>();
 
 const updateDeviceMap = () => {
@@ -78,7 +87,10 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
     const data = JSON.parse(fileContent);
     if (isValidConfigData(data)) {
       players = data.players;
+      updatePlayerMap();
       updateDeviceMap();
+      // Initialize the cache to prevent immediate re-saving of identical state
+      lastConfigData = JSON.stringify(data, null, 2);
       return data;
     } else {
       console.error('Failed to load config: Invalid configuration format');
@@ -95,6 +107,8 @@ export const loadConfig = async (): Promise<ConfigData | null> => {
   return null;
 };
 
+let lastConfigData: string | null = null;
+
 export const saveConfig = (sync = false) => {
   const config: ConfigData = {
     players,
@@ -103,6 +117,11 @@ export const saveConfig = (sync = false) => {
   };
 
   const data = JSON.stringify(config, null, 2);
+
+  if (data === lastConfigData) {
+    return;
+  }
+  lastConfigData = data;
 
   if (sync) {
     try {
@@ -131,6 +150,7 @@ interface Buzz {
 
 export let gameState: GameState = 'IDLE';
 export let buzzQueue: Buzz[] = [];
+export const buzzQueuePlayers = new Set<number>();
 export let earlyBuzzers: Set<number> = new Set();
 export let floorOpenTime = 0;
 export const PENALTY_TIME_MS = 250;
@@ -140,7 +160,11 @@ let calibrationTarget: number | null = null;
 
 // --- Expose for testing ---
 export const __setGameStateForTest = (state: GameState) => { gameState = state; };
-export const __setBuzzQueueForTest = (queue: Buzz[]) => { buzzQueue = queue; };
+export const __setBuzzQueueForTest = (queue: Buzz[]) => {
+  buzzQueue = queue;
+  buzzQueuePlayers.clear();
+  queue.forEach(b => buzzQueuePlayers.add(b.player));
+};
 export const __setEarlyBuzzersForTest = (buzzers: Set<number>) => { earlyBuzzers = buzzers; };
 export const __setFloorOpenTimeForTest = (time: number) => { floorOpenTime = time; };
 export const __getEarlyBuzzersForTest = () => { return earlyBuzzers; };
@@ -152,7 +176,10 @@ export const __setTimerIntervalForTest = (interval: NodeJS.Timeout | null) => { 
 export const __getCalibrationTargetForTest = () => { return calibrationTarget; };
 export const __setCalibrationTargetForTest = (target: number | null) => { calibrationTarget = target; };
 export const __getPlayersForTest = () => players;
-export const __setPlayersForTest = (p: Player[]) => { players = p; };
+export const __setPlayersForTest = (p: Player[]) => {
+  players = p;
+  updatePlayerMap();
+};
 
 // Devices
 const DELCOM_VENDOR_ID = 0x0fc5;
@@ -161,6 +188,8 @@ const hidDevices: HID.HID[] = [];
 
 let mainWindow: BrowserWindow | null = null;
 let boardWindow: BrowserWindow | null = null;
+export const __setMainWindowForTest = (win: BrowserWindow | null) => { mainWindow = win; };
+export const __setBoardWindowForTest = (win: BrowserWindow | null) => { boardWindow = win; };
 
 // --- Window Management ---
 
@@ -271,7 +300,7 @@ export const handleBuzz = (playerId: number) => {
       }
     }
 
-    if (buzzQueue.some(b => b.player === playerId)) return;
+    if (buzzQueuePlayers.has(playerId)) return;
 
     const isFirst = buzzQueue.length === 0;
     const delta = isFirst ? 0 : now - buzzQueue[0].timestamp;
@@ -282,6 +311,7 @@ export const handleBuzz = (playerId: number) => {
       delta: delta,
       label: isFirst ? '' : `+${Math.round(delta)} MS`
     });
+    buzzQueuePlayers.add(playerId);
     
     broadcastState();
   }
@@ -289,7 +319,7 @@ export const handleBuzz = (playerId: number) => {
 
 const handleDeviceInput = (devicePath: string) => {
   if (calibrationTarget !== null) {
-    const player = players.find(p => p.id === calibrationTarget);
+    const player = playerMap.get(calibrationTarget);
     if (player) {
       const existingPlayer = deviceMap.get(devicePath);
       if (existingPlayer) existingPlayer.devicePath = null;
@@ -311,16 +341,28 @@ const handleDeviceInput = (devicePath: string) => {
 // --- Helper: Force Quit ---
 const forceQuit = () => {
   saveConfig(true);
-  // Nuclear option: Kill the process to prevent node-hid hangs
-  process.kill(process.pid, 'SIGKILL');
+
+  // Cleanly close all HID devices to prevent event loop hangs
+  for (const device of hidDevices) {
+    try {
+      device.close();
+    } catch (e) {
+      console.error('Error closing HID device during quit:', e);
+    }
+  }
+
+  app.quit();
 };
 export const __forceQuitForTest = forceQuit;
+export const __setLastConfigDataForTest = (data: string | null) => { lastConfigData = data; };
+export const __getLastConfigDataForTest = () => { return lastConfigData; };
 
 // --- IPC Handlers ---
 
 export const resetGame = () => {
   gameState = 'IDLE';
   buzzQueue = [];
+  buzzQueuePlayers.clear();
   earlyBuzzers.clear();
   timerValue = 5;
   if (timerInterval) clearInterval(timerInterval);
@@ -331,6 +373,7 @@ export const resetGame = () => {
 export const openFloor = () => {
   gameState = 'OPEN';
   buzzQueue = [];
+  buzzQueuePlayers.clear();
   floorOpenTime = performance.now();
   
   // Clear early buzzers after penalty time
@@ -374,7 +417,7 @@ export const updatePlayerNameHandler = (event: Electron.IpcMainEvent, payload: u
   // Basic string validation (length check)
   const sanitizedName = name.trim().slice(0, 50);
 
-  const p = players.find(player => player.id === id);
+  const p = playerMap.get(id);
   if (p) {
     p.name = sanitizedName;
     saveConfig();
@@ -386,7 +429,7 @@ ipcMain.on('update-player-name', updatePlayerNameHandler);
 
 ipcMain.on('start-calibration', (event, playerId) => {
   if (typeof playerId !== 'number') return;
-  if (!players.some(p => p.id === playerId)) return;
+  if (!playerMap.has(playerId)) return;
   calibrationTarget = playerId;
   broadcastState();
 });
@@ -398,7 +441,7 @@ ipcMain.on('cancel-calibration', () => {
 
 ipcMain.on('simulate-buzz', (event, playerId) => {
   if (typeof playerId !== 'number') return;
-  if (!players.some(p => p.id === playerId)) return;
+  if (!playerMap.has(playerId)) return;
   handleBuzz(playerId);
 });
 
@@ -417,14 +460,13 @@ ipcMain.on('quit-app', () => {
 // --- HID Setup (Event Mode - Restored) ---
 
 const getUniqueDelcoms = (devices: HID.Device[]): HID.Device[] => {
-  const delcoms = devices.filter(d => d.vendorId === DELCOM_VENDOR_ID && d.productId === DELCOM_PRODUCT_ID);
   const uniquePaths = new Set<string>();
 
-  return delcoms.filter(d => {
-      if (!d.path) return false;
-      if (uniquePaths.has(d.path)) return false;
-      uniquePaths.add(d.path);
-      return true;
+  return devices.filter(d => {
+    if (d.vendorId !== DELCOM_VENDOR_ID || d.productId !== DELCOM_PRODUCT_ID || !d.path) return false;
+    if (uniquePaths.has(d.path)) return false;
+    uniquePaths.add(d.path);
+    return true;
   });
 };
 
@@ -436,16 +478,24 @@ const setupDevice = (d: HID.Device) => {
 
     let lastState = false;
 
-    device.on('data', (data) => {
-       // Byte 3 check (from previous success)
-       const pressed = data.length > 3 && data[3] > 0;
-       if (pressed && !lastState && d.path) {
-         handleDeviceInput(d.path);
-       }
-       lastState = pressed;
-    });
+    const readLoop = () => {
+      device.read((err, data) => {
+        if (err) {
+          console.error('HID Error:', err);
+          return;
+        }
+        // Byte 3 check (from previous success)
+        const pressed = data.length > 3 && data[3] > 0;
+        if (pressed && !lastState && d.path) {
+          handleDeviceInput(d.path);
+        }
+        lastState = pressed;
 
-    device.on('error', (err) => console.error('HID Error:', err));
+        readLoop();
+      });
+    };
+
+    readLoop();
   } catch (e) {
     console.error(`Failed to open device at ${d.path}`, e);
   }
@@ -463,7 +513,19 @@ const initHID = () => {
   }, 1000);
 };
 
+export const __initHIDForTest = initHID;
+export const __setupDeviceForTest = setupDevice;
+
 // --- App Lifecycle ---
+
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-navigate', (event) => {
+    event.preventDefault();
+  });
+  contents.setWindowOpenHandler(() => {
+    return { action: 'deny' };
+  });
+});
 
 app.on('ready', async () => {
   const config = await loadConfig();
@@ -482,4 +544,8 @@ app.on('ready', async () => {
 
 app.on('window-all-closed', () => {
   forceQuit();
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });

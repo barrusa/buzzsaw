@@ -10,3 +10,63 @@ body {
   font-family: 'Oswald', sans-serif;
   text-transform: uppercase;
 }
+
+.player-setup-container {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.player-setup-instruction {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.calibration-alert {
+  background-color: #ffeb3b;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.player-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.player-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.player-label {
+  width: 80px;
+}
+
+.player-input {
+  padding: 5px;
+}
+
+.buzzer-btn {
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.buzzer-btn-mapped {
+  background-color: #e0ffe0;
+}
+
+.buzzer-btn-unmapped {
+  background-color: #ffe0e0;
+}
+
+.device-status {
+  font-size: 0.8em;
+  color: #888;
+}

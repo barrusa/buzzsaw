@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import TimerSection from './components/TimerSection';
 import StateText from './components/StateText';
 import PenaltyDisplay from './components/PenaltyDisplay';
 import BuzzQueueDisplay from './components/BuzzQueueDisplay';
+import PlayerRow from './components/PlayerRow';
 
 const useGameState = () => {
   const [state, setState] = useState<GameStateData>({
@@ -16,11 +17,13 @@ const useGameState = () => {
   });
 
   useEffect(() => {
-    window.electronAPI.onUpdateState((newState) => {
+    const cleanup = window.electronAPI.onUpdateState((newState) => {
       setState(newState);
     });
     // Request initial state
     window.electronAPI.requestState();
+
+    return cleanup;
   }, []);
 
   return state;
@@ -56,48 +59,26 @@ export const useAudio = (state: GameStateData) => {
 
 export const PlayerSetup = ({ players, calibrationTarget }: { players: Player[], calibrationTarget: number | null }) => {
   return (
-    <div style={{ marginBottom: 20, padding: 15, border: '1px solid #ddd', borderRadius: 8, backgroundColor: '#f9f9f9' }}>
+    <div className="player-setup-container">
       <h3>Player Setup & Buzzer Mapping</h3>
-      <p style={{ fontSize: '0.9em', color: '#666' }}>
+      <p className="player-setup-instruction">
         Click "Map Buzzer" then press the physical button to assign it.
       </p>
       
       {calibrationTarget !== null && (
-        <div style={{ 
-          backgroundColor: '#ffeb3b', padding: 10, marginBottom: 10, borderRadius: 4, 
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-        }}>
+        <div className="calibration-alert">
           <strong>Press the buzzer for Player {calibrationTarget} now...</strong>
           <button onClick={() => window.electronAPI.cancelCalibration()}>Cancel</button>
         </div>
       )}
 
-      <div style={{ display: 'grid', gap: 10 }}>
+      <div className="player-grid">
         {players.map(p => (
-          <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <strong style={{ width: 80 }}>Player {p.id}:</strong>
-            <input 
-              type="text" 
-              value={p.name} 
-              onChange={(e) => window.electronAPI.updatePlayerName(p.id, e.target.value)}
-              placeholder="Enter Name"
-              style={{ padding: 5 }}
-            />
-            <button 
-              onClick={() => window.electronAPI.startCalibration(p.id)}
-              disabled={calibrationTarget !== null}
-              style={{ 
-                backgroundColor: p.devicePath ? '#e0ffe0' : '#ffe0e0',
-                border: '1px solid #ccc',
-                cursor: 'pointer'
-              }}
-            >
-              {p.devicePath ? 'Mapped (Remap)' : 'Map Buzzer'}
-            </button>
-            <span style={{ fontSize: '0.8em', color: '#888' }}>
-              {p.devicePath ? '✓ Ready' : '• No Device'}
-            </span>
-          </div>
+          <PlayerRow
+            key={p.id}
+            player={p}
+            calibrationTarget={calibrationTarget}
+          />
         ))}
       </div>
     </div>
@@ -204,18 +185,22 @@ const ManualSimulation = ({ getPlayerName }: { getPlayerName: (id: number) => st
   </div>
 );
 
+export const usePlayerName = (players: Player[] | undefined) => {
+  const playerMap = React.useMemo(() => {
+    return (players || []).reduce((acc: Record<number, string>, p) => {
+      acc[p.id] = p.name;
+      return acc;
+    }, {});
+  }, [players]);
+
+  return (id: number) => playerMap[id] || `Player ${id}`;
+};
+
 export const HostWindow = () => {
   const state = useGameState();
   const { gameState, buzzQueue, earlyBuzzers, timer, players, calibrationTarget } = state;
 
-  const playerMap = useMemo(() => {
-    return players.reduce((acc, p) => {
-      acc[p.id] = p.name;
-      return acc;
-    }, {} as Record<number, string>);
-  }, [players]);
-
-  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
+  const getPlayerName = usePlayerName(players);
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', maxWidth: 800, margin: '0 auto' }}>
@@ -235,14 +220,7 @@ export const BoardWindow = () => {
   
   const { gameState, buzzQueue, earlyBuzzers, timer, players } = state;
 
-  const playerMap = useMemo(() => {
-    return (players || []).reduce((acc, p) => {
-      acc[p.id] = p.name;
-      return acc;
-    }, {} as Record<number, string>);
-  }, [players]);
-
-  const getPlayerName = (id: number) => playerMap[id] || `Player ${id}`;
+  const getPlayerName = usePlayerName(players);
   
   return (
     <div style={{ 
