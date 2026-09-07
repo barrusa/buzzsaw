@@ -32,13 +32,30 @@ describe('HostWindow', () => {
     render(<HostWindow />);
   };
 
-  it('renders default state correctly', () => {
-    renderComponent();
-    expect(screen.getByText('Host Console')).toBeTruthy();
-    expect(screen.getByText('IDLE')).toBeTruthy();
-    expect(screen.getByText('5s')).toBeTruthy();
-    expect(screen.getByText('Waiting for buzz...')).toBeTruthy();
-    expect(screen.getByText('None')).toBeTruthy();
+  describe('renders default state correctly', () => {
+    beforeEach(() => {
+      renderComponent();
+    });
+
+    it('renders Host Console text', () => {
+      expect(screen.getByText('Host Console')).toBeTruthy();
+    });
+
+    it('renders IDLE text', () => {
+      expect(screen.getByText('IDLE')).toBeTruthy();
+    });
+
+    it('renders 5s text', () => {
+      expect(screen.getByText('5s')).toBeTruthy();
+    });
+
+    it('renders Waiting for buzz text', () => {
+      expect(screen.getByText('Waiting for buzz...')).toBeTruthy();
+    });
+
+    it('renders None text', () => {
+      expect(screen.getByText('None')).toBeTruthy();
+    });
   });
 
   it('calls openBoardWindow when Focus Board is clicked', () => {
@@ -77,93 +94,108 @@ describe('HostWindow', () => {
     expect(mockElectronAPI.simulateBuzz).toHaveBeenCalledWith(3);
   });
 
-  it('updates state when onUpdateState callback is triggered', async () => {
+  describe('onUpdateState callback', () => {
     let updateCallback: any;
-    mockElectronAPI.onUpdateState.mockImplementation((cb) => {
-      updateCallback = cb;
-    });
 
-    renderComponent();
+    beforeEach(async () => {
+      mockElectronAPI.onUpdateState.mockImplementation((cb) => {
+        updateCallback = cb;
+      });
 
-    // Trigger update
-    await React.act(async () => {
-      updateCallback({
-        gameState: 'OPEN',
-        buzzQueue: [
-          { player: 1, timestamp: 123, delta: 0, label: '0.000s' }
-        ],
-        earlyBuzzers: [2],
-        timer: 3,
-        players: [
-          { id: 1, name: 'Alice', devicePath: null },
-          { id: 2, name: 'Bob', devicePath: null }
-        ],
-        calibrationTarget: null,
+      renderComponent();
+
+      // Trigger update
+      await React.act(async () => {
+        updateCallback({
+          gameState: 'OPEN',
+          buzzQueue: [
+            { player: 1, timestamp: 123, delta: 0, label: '0.000s' }
+          ],
+          earlyBuzzers: [2],
+          timer: 3,
+          players: [
+            { id: 1, name: 'Alice', devicePath: null },
+            { id: 2, name: 'Bob', devicePath: null }
+          ],
+          calibrationTarget: null,
+        });
       });
     });
 
-    // Check updated render
-    expect(screen.getByText('OPEN')).toBeTruthy();
-    expect(screen.getByText('3s')).toBeTruthy();
+    it('updates game state and timer correctly', () => {
+      expect(screen.getByText('OPEN')).toBeTruthy();
+      expect(screen.getByText('3s')).toBeTruthy();
+    });
 
-    // Buzz Queue
-    expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.getByText('(0.000s)')).toBeTruthy();
+    it('renders buzz queue correctly', () => {
+      expect(screen.getByText('Alice')).toBeTruthy();
+      expect(screen.getByText('(0.000s)')).toBeTruthy();
+    });
 
-    // Locked Out
-    expect(screen.getByText('Bob')).toBeTruthy();
+    it('renders locked out players correctly', () => {
+      expect(screen.getByText('Bob')).toBeTruthy();
+    });
 
-    // Player Setup
-    expect(screen.getByDisplayValue('Alice')).toBeTruthy();
-    expect(screen.getByDisplayValue('Bob')).toBeTruthy();
+    it('renders player setup inputs correctly', () => {
+      expect(screen.getByDisplayValue('Alice')).toBeTruthy();
+      expect(screen.getByDisplayValue('Bob')).toBeTruthy();
+    });
   });
 
-  it('handles player setup interactions (updatePlayerName, startCalibration, cancelCalibration)', async () => {
+  describe('player setup interactions', () => {
     let updateCallback: any;
-    mockElectronAPI.onUpdateState.mockImplementation((cb) => {
-      updateCallback = cb;
-    });
 
-    renderComponent();
+    beforeEach(async () => {
+      mockElectronAPI.onUpdateState.mockImplementation((cb) => {
+        updateCallback = cb;
+      });
 
-    // Inject players
-    await React.act(async () => {
-      updateCallback({
-        gameState: 'IDLE',
-        buzzQueue: [],
-        earlyBuzzers: [],
-        timer: 5,
-        players: [
-          { id: 1, name: 'Alice', devicePath: null }
-        ],
-        calibrationTarget: null,
+      renderComponent();
+
+      // Inject players
+      await React.act(async () => {
+        updateCallback({
+          gameState: 'IDLE',
+          buzzQueue: [],
+          earlyBuzzers: [],
+          timer: 5,
+          players: [
+            { id: 1, name: 'Alice', devicePath: null }
+          ],
+          calibrationTarget: null,
+        });
       });
     });
 
-    const input = screen.getByDisplayValue('Alice');
-    fireEvent.change(input, { target: { value: 'Alicia' } });
-    expect(mockElectronAPI.updatePlayerName).toHaveBeenCalledWith(1, 'Alicia');
-
-    // Map Buzzer
-    fireEvent.click(screen.getByText('Map Buzzer'));
-    expect(mockElectronAPI.startCalibration).toHaveBeenCalledWith(1);
-
-    // Inject calibration target
-    await React.act(async () => {
-      updateCallback({
-        gameState: 'IDLE',
-        buzzQueue: [],
-        earlyBuzzers: [],
-        timer: 5,
-        players: [
-          { id: 1, name: 'Alice', devicePath: null }
-        ],
-        calibrationTarget: 1,
-      });
+    it('calls updatePlayerName on input change', () => {
+      const input = screen.getByDisplayValue('Alice');
+      fireEvent.change(input, { target: { value: 'Alicia' } });
+      expect(mockElectronAPI.updatePlayerName).toHaveBeenCalledWith(1, 'Alicia');
     });
 
-    expect(screen.getByText('Press the buzzer for Player 1 now...')).toBeTruthy();
-    fireEvent.click(screen.getByText('Cancel'));
-    expect(mockElectronAPI.cancelCalibration).toHaveBeenCalledTimes(1);
+    it('calls startCalibration when Map Buzzer is clicked', () => {
+      fireEvent.click(screen.getByText('Map Buzzer'));
+      expect(mockElectronAPI.startCalibration).toHaveBeenCalledWith(1);
+    });
+
+    it('calls cancelCalibration when Cancel is clicked', async () => {
+      // Inject calibration target
+      await React.act(async () => {
+        updateCallback({
+          gameState: 'IDLE',
+          buzzQueue: [],
+          earlyBuzzers: [],
+          timer: 5,
+          players: [
+            { id: 1, name: 'Alice', devicePath: null }
+          ],
+          calibrationTarget: 1,
+        });
+      });
+
+      expect(screen.getByText('Press the buzzer for Player 1 now...')).toBeTruthy();
+      fireEvent.click(screen.getByText('Cancel'));
+      expect(mockElectronAPI.cancelCalibration).toHaveBeenCalledTimes(1);
+    });
   });
 });
