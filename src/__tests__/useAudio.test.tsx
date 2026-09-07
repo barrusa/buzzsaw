@@ -100,8 +100,7 @@ describe('useAudio', () => {
   });
 
   it('should handle errors thrown by audio play gracefully', () => {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
     playMock.mockRejectedValueOnce(new Error('Audio playback failed'));
 
     const initialState = {
@@ -132,8 +131,7 @@ describe('useAudio', () => {
   });
 
   it('should handle errors thrown by timeout audio play gracefully', () => {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
     playMock.mockRejectedValueOnce(new Error('Audio playback failed'));
 
     const initialState = {
