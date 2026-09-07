@@ -71,7 +71,8 @@ import {
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
-  PENALTY_TIME_MS
+  PENALTY_TIME_MS,
+  __setLastConfigDataForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -475,6 +476,7 @@ describe("saveConfig", () => {
   it("should handle sync writeFileSync error", () => {
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
+    __setLastConfigDataForTest(null);
 
     saveConfig(true);
 
