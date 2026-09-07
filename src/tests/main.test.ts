@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 
 vi.mock('electron', () => {
-  const handlers = new Map<string, Function>();
+  const handlers = new Map<string, (...args: any[]) => any>();
   (globalThis as any).mockIpcHandlers = handlers;
   return {
     app: {
@@ -68,6 +68,7 @@ import {
   saveConfig,
   __getCalibrationTargetForTest,
   __setCalibrationTargetForTest,
+  __setLastConfigDataForTest,
   updatePlayerNameHandler,
   __getPlayersForTest,
   __setPlayersForTest,
@@ -363,7 +364,7 @@ describe('resetGame', () => {
     __setGameStateForTest('OPEN');
     __setBuzzQueueForTest([{ player: 1, timestamp: 900, delta: 0, label: '' }]);
     __setEarlyBuzzersForTest(new Set([1]));
-    const mockInterval = setInterval(() => {}, 1000);
+    const mockInterval = setInterval(() => { /* noop */ }, 1000);
     __setTimerIntervalForTest(mockInterval);
 
     // Call resetGame
@@ -463,6 +464,7 @@ describe("saveConfig", () => {
   it("should handle async writeFile rejection", async () => {
     const error = new Error("Write failed");
     vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
+    __setLastConfigDataForTest(null);
 
     saveConfig(false);
 
@@ -475,6 +477,7 @@ describe("saveConfig", () => {
   it("should handle sync writeFileSync error", () => {
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
+    __setLastConfigDataForTest(null);
 
     saveConfig(true);
 
@@ -484,7 +487,7 @@ describe("saveConfig", () => {
 
 
 describe('start-calibration IPC Handler', () => {
-  let startCalibrationHandler: Function;
+  let startCalibrationHandler: (...args: any[]) => any;
 
   beforeAll(async () => {
     // Ensure the module is imported to register handlers
@@ -520,7 +523,7 @@ describe('start-calibration IPC Handler', () => {
 describe('initHID', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => { /* noop */ });
   });
 
   afterEach(() => {
