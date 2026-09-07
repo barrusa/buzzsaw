@@ -134,9 +134,9 @@ describe('updatePlayerNameHandler', () => {
     expect(__getPlayersForTest()[1].name).toBe('A'.repeat(50));
   });
 
-  it('escapes HTML characters in the name', () => {
+  it('does not escape HTML characters in the name since React handles it', () => {
     updatePlayerNameHandler(mockEvent, { id: 1, name: '<script>a("test & \'")</script>' });
-    expect(__getPlayersForTest()[0].name).toBe('&lt;script&gt;a(&quot;test &amp; &#39;&quot;)&lt;/');
+    expect(__getPlayersForTest()[0].name).toBe('<script>a("test & \'")</script>');
   });
 
   it('does nothing if player id is not found', () => {
