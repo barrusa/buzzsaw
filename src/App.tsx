@@ -185,13 +185,10 @@ const ManualSimulation = ({ getPlayerName }: { getPlayerName: (id: number) => st
 
 export const usePlayerName = (players: Player[] | undefined) => {
   const playerMap = React.useMemo(() => {
-    const acc: Record<number, string> = {};
-    const pList = players || [];
-    for (let i = 0; i < pList.length; i++) {
-      const p = pList[i];
+    return (players || []).reduce((acc: Record<number, string>, p) => {
       acc[p.id] = p.name;
-    }
-    return acc;
+      return acc;
+    }, {});
   }, [players]);
 
   return (id: number) => playerMap[id] || `Player ${id}`;
