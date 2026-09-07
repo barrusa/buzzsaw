@@ -469,6 +469,7 @@ const getUniqueDelcoms = (devices: HID.Device[]): HID.Device[] => {
     return true;
   });
 };
+export const __getUniqueDelcomsForTest = getUniqueDelcoms;
 
 const setupDevice = (d: HID.Device) => {
   if (!d.path) return;

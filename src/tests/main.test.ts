@@ -84,7 +84,8 @@ import {
   PENALTY_TIME_MS,
   __setMainWindowForTest,
   __setBoardWindowForTest,
-  __setLastConfigDataForTest
+  __setLastConfigDataForTest,
+  __getUniqueDelcomsForTest
 } from '../main.ts';
 
 import fs from 'fs';
@@ -371,6 +372,52 @@ describe('forceQuit', () => {
 
     expect(fs.default.writeFileSync).toHaveBeenCalled();
     expect(app.quit).toHaveBeenCalled();
+  });
+});
+
+
+describe('getUniqueDelcoms', () => {
+  const DELCOM_VENDOR_ID = 0x0fc5;
+  const DELCOM_PRODUCT_ID = 0xb080;
+
+  it('should handle an empty array', () => {
+    expect(__getUniqueDelcomsForTest([])).toEqual([]);
+  });
+
+  it('should filter out devices with non-matching vendorId or productId', () => {
+    const devices: any[] = [
+      { vendorId: 1234, productId: DELCOM_PRODUCT_ID, path: 'path1' },
+      { vendorId: DELCOM_VENDOR_ID, productId: 5678, path: 'path2' },
+      { vendorId: 1234, productId: 5678, path: 'path3' },
+    ];
+    expect(__getUniqueDelcomsForTest(devices)).toEqual([]);
+  });
+
+  it('should filter out devices without a path', () => {
+    const devices: any[] = [
+      { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID },
+      { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID, path: '' },
+      { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID, path: undefined },
+    ];
+    expect(__getUniqueDelcomsForTest(devices)).toEqual([]);
+  });
+
+  it('should keep valid devices', () => {
+    const devices: any[] = [
+      { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID, path: 'valid_path_1' },
+      { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID, path: 'valid_path_2' },
+    ];
+    expect(__getUniqueDelcomsForTest(devices)).toEqual(devices);
+  });
+
+  it('should filter out duplicate devices with the same path', () => {
+    const validDevice1 = { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID, path: 'shared_path' };
+    const validDevice2 = { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID, path: 'shared_path' };
+    const validDevice3 = { vendorId: DELCOM_VENDOR_ID, productId: DELCOM_PRODUCT_ID, path: 'unique_path' };
+
+    const devices: any[] = [validDevice1, validDevice2, validDevice3];
+
+    expect(__getUniqueDelcomsForTest(devices)).toEqual([validDevice1, validDevice3]);
   });
 });
 
