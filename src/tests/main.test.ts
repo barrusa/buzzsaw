@@ -493,6 +493,32 @@ describe("saveConfig", () => {
     __getPlayersForTest().pop();
   });
 
+  it("should handle async writeFile rejection", async () => {
+    // Mutate state so saveConfig actually writes
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
+    const error = new Error("Write failed");
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
+
+    saveConfig(false);
+
+    // Let the rejected promise be handled
+    await Promise.resolve();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to save config:", error);
+    __getPlayersForTest().pop();
+  });
+
+  it("should save config asynchronously when sync is false and succeed", async () => {
+    __getPlayersForTest().push({ id: 997, name: 'Async Writer', devicePath: null } as any);
+    vi.mocked(fs.promises.writeFile).mockResolvedValueOnce();
+
+    saveConfig(false);
+
+    expect(fs.promises.writeFile).toHaveBeenCalled();
+    __getPlayersForTest().pop();
+  });
+
+
   it("should handle sync writeFileSync error", () => {
     // Mutate state so saveConfig actually writes
     __getPlayersForTest().push({ id: 999, name: "temp", devicePath: null } as any);
@@ -696,7 +722,8 @@ describe('App Security Navigation Checks', () => {
       const webContentsCreatedHandler = webContentsCreatedCall![1];
 
       const mockContents = {
-        on: vi.fn()
+        on: vi.fn(),
+        setWindowOpenHandler: vi.fn()
       };
 
       // Trigger the handler
@@ -753,19 +780,15 @@ describe('open-board-window IPC Handler', () => {
 
   it('should focus the board window if it already exists', async () => {
     const { BrowserWindow } = await import('electron');
-    // First call creates it
-    openBoardWindowHandler();
-    expect(BrowserWindow).toHaveBeenCalledTimes(1);
+    const mockFocus = vi.fn();
+    const { __setBoardWindowForTest } = await import('../main.ts');
+    __setBoardWindowForTest({ focus: mockFocus } as any);
 
-    // Get the instance created
-    const mockWindowInstance = vi.mocked(BrowserWindow).mock.results[0].value;
-
-    // Reset mock to trace second call
     vi.mocked(BrowserWindow).mockClear();
 
     openBoardWindowHandler();
-    expect(BrowserWindow).not.toHaveBeenCalled(); // No new window created
-    expect(mockWindowInstance.focus).toHaveBeenCalled();
+    expect(vi.mocked(BrowserWindow)).not.toHaveBeenCalled(); // No new window created
+    expect(mockFocus).toHaveBeenCalled();
   });
 });
 
@@ -776,14 +799,18 @@ describe('cancel-calibration IPC Handler', () => {
     await import('../main.ts');
     cancelCalibrationHandler = (globalThis as any).mockIpcHandlers.get('cancel-calibration')!;
   });
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    __setCalibrationTargetForTest(1);
+    const { __setCalibrationTargetForTest, __setMainWindowForTest, __setBoardWindowForTest } = await import('../main.ts');
+    __setCalibrationTargetForTest(1 as any);
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
   });
   it('should find the handler', () => {
     expect(cancelCalibrationHandler).toBeDefined();
   });
-  it('should set calibrationTarget to null', () => {
+  it('should set calibrationTarget to null', async () => {
+    const { __getCalibrationTargetForTest } = await import('../main.ts');
     cancelCalibrationHandler({});
     expect(__getCalibrationTargetForTest()).toBeNull();
   });
@@ -810,6 +837,9 @@ describe('quit-app IPC', () => {
   it('should invoke forceQuit when called', async () => {
     const fs = await import('fs');
     const { app } = await import('electron');
+    const { __setMainWindowForTest, __setBoardWindowForTest } = await import('../main.ts');
+    __setMainWindowForTest(null);
+    __setBoardWindowForTest(null);
 
     quitAppHandler({});
 
