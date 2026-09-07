@@ -17,11 +17,13 @@ const useGameState = () => {
   });
 
   useEffect(() => {
-    window.electronAPI.onUpdateState((newState) => {
+    const cleanup = window.electronAPI.onUpdateState((newState) => {
       setState(newState);
     });
     // Request initial state
     window.electronAPI.requestState();
+
+    return cleanup;
   }, []);
 
   return state;
