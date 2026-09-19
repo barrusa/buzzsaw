@@ -2,13 +2,11 @@ import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import HID from 'node-hid';
+import started from 'electron-squirrel-startup';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (process.platform === 'win32') {
-  const squirrelStartup = 'electron-squirrel-startup';
-  if (require(squirrelStartup)) {
-    app.quit();
-  }
+if (started) {
+  app.quit();
 }
 // --- Persistence ---
 const DATA_PATH = path.join(app.getPath('userData'), 'buzzsaw-config.json');
