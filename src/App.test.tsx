@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, renderHook } from '@testing-library/react';
+import { usePlayerName } from './App';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import App from './App';
 
@@ -120,5 +121,48 @@ describe('Audio error tests', () => {
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Audio error", error);
     consoleErrorSpy.mockRestore();
+  });
+});
+
+
+describe('usePlayerName', () => {
+  const players = [
+    { id: 1, name: 'Alice', devicePath: null },
+    { id: 2, name: 'Bob', devicePath: null },
+  ];
+
+  it('returns correct player name for existing players', () => {
+    const { result } = renderHook(() => usePlayerName(players));
+    expect(result.current(1)).toBe('Alice');
+    expect(result.current(2)).toBe('Bob');
+  });
+
+  it('handles undefined players prop without crashing', () => {
+    const { result } = renderHook(() => usePlayerName(undefined));
+    expect(result.current(1)).toBe('Player 1');
+  });
+
+  it('returns fallback name for unknown IDs', () => {
+    const { result } = renderHook(() => usePlayerName(players));
+    expect(result.current(99)).toBe('Player 99');
+  });
+
+  it('properly updates when the players prop changes', () => {
+    const { result, rerender } = renderHook(({ p }) => usePlayerName(p), {
+      initialProps: { p: players },
+    });
+
+    expect(result.current(1)).toBe('Alice');
+
+    // Rerender with new players
+    const newPlayers = [
+      { id: 1, name: 'Alex', devicePath: null },
+      { id: 3, name: 'Charlie', devicePath: null },
+    ];
+    rerender({ p: newPlayers });
+
+    expect(result.current(1)).toBe('Alex');
+    expect(result.current(2)).toBe('Player 2'); // Bob is no longer in the list
+    expect(result.current(3)).toBe('Charlie');
   });
 });
