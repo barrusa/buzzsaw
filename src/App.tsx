@@ -239,14 +239,6 @@ export const BoardWindow = () => {
 
       <StateText gameState={gameState} />
       
-      <style>{`
-        @keyframes winnerPulse {
-          0% { background-color: #0000cc; }
-          50% { background-color: #0000ff; }
-          100% { background-color: #0000cc; }
-        }
-      `}</style>
-
       <div style={{ width: '100%', maxWidth: 900, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
         <PenaltyDisplay earlyBuzzers={earlyBuzzers} buzzQueue={buzzQueue} getPlayerName={getPlayerName} />
