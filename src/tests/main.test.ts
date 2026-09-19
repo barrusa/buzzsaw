@@ -72,6 +72,7 @@ import {
   __setTimerIntervalForTest,
   __getGameStateForTest,
   __forceQuitForTest,
+  __getHidDevicesForTest,
   __initHIDForTest,
   __setupDeviceForTest,
   loadConfig,
@@ -373,7 +374,29 @@ describe('forceQuit', () => {
     expect(fs.default.writeFileSync).toHaveBeenCalled();
     expect(app.quit).toHaveBeenCalled();
   });
+
+  it('should handle errors when closing HID devices', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fs = await import('fs');
+    const { app } = await import('electron');
+
+    const hidDevices = __getHidDevicesForTest();
+    hidDevices.push({
+      close: () => { throw new Error('Mock close error'); }
+    } as any);
+
+    __forceQuitForTest();
+
+    expect(consoleSpy).toHaveBeenCalledWith('Error closing HID device during quit:', expect.any(Error));
+    expect(fs.default.writeFileSync).toHaveBeenCalled();
+    expect(app.quit).toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+    // clean up
+    hidDevices.pop();
+  });
 });
+
 
 
 describe('getUniqueDelcoms', () => {
