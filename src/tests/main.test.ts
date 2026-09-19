@@ -212,7 +212,7 @@ describe('openFloor', () => {
   });
 
   it('clears existing timerInterval', () => {
-    const mockInterval = setInterval(() => { /* noop */ }, 10000);
+    const mockInterval = 123 as unknown as NodeJS.Timeout;
     __setTimerIntervalForTest(mockInterval);
 
     // In node, a timer object isn't strictly identical if cleared, but
@@ -220,8 +220,6 @@ describe('openFloor', () => {
     openFloor();
     const newInterval = __getTimerIntervalForTest();
     expect(newInterval).not.toBe(mockInterval);
-    // clean up
-    clearInterval(mockInterval);
   });
 
   it('ticks down timer and locks game', () => {
@@ -450,7 +448,7 @@ describe('resetGame', () => {
     __setGameStateForTest('OPEN');
     __setBuzzQueueForTest([{ player: 1, timestamp: 900, delta: 0, label: '' }]);
     __setEarlyBuzzersForTest(new Set([1]));
-    const mockInterval = setInterval(() => {}, 1000);
+    const mockInterval = 123 as unknown as NodeJS.Timeout;
     __setTimerIntervalForTest(mockInterval);
 
     // Call resetGame
@@ -462,9 +460,6 @@ describe('resetGame', () => {
     expect(__getEarlyBuzzersForTest().size).toBe(0);
     expect(__getTimerValueForTest()).toBe(5);
     expect(__getTimerIntervalForTest()).toBeNull();
-
-    // clean up
-    clearInterval(mockInterval);
   });
 });
 
