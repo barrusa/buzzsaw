@@ -528,7 +528,7 @@ describe("saveConfig", () => {
 
   it("should handle async writeFile rejection", async () => {
     // Mutate state so saveConfig actually writes
-    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as Player);
     const error = new Error("Write failed");
     vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
 
@@ -543,7 +543,7 @@ describe("saveConfig", () => {
 
   it("should handle async writeFile rejection", async () => {
     // Mutate state so saveConfig actually writes
-    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as any);
+    __getPlayersForTest().push({ id: 998, name: "temp", devicePath: null } as Player);
     const error = new Error("Write failed");
     vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(error);
 
@@ -557,7 +557,7 @@ describe("saveConfig", () => {
   });
 
   it("should save config asynchronously when sync is false and succeed", async () => {
-    __getPlayersForTest().push({ id: 997, name: 'Async Writer', devicePath: null } as any);
+    __getPlayersForTest().push({ id: 997, name: 'Async Writer', devicePath: null } as Player);
     vi.mocked(fs.promises.writeFile).mockResolvedValueOnce();
 
     saveConfig(false);
@@ -569,7 +569,7 @@ describe("saveConfig", () => {
 
   it("should handle sync writeFileSync error", () => {
     // Mutate state so saveConfig actually writes
-    __getPlayersForTest().push({ id: 999, name: "temp", devicePath: null } as any);
+    __getPlayersForTest().push({ id: 999, name: "temp", devicePath: null } as Player);
     const error = new Error("Sync write failed");
     vi.mocked(fs.writeFileSync).mockImplementationOnce(() => { throw error; });
     __setLastConfigDataForTest(null);
@@ -607,7 +607,7 @@ describe('simulate-buzz IPC Handler', () => {
       __setGameStateForTest,
       __setEarlyBuzzersForTest
     } = await import('../main.ts');
-    __setPlayersForTest([{ id: 1, name: 'P1', devicePath: 'abc' } as any]);
+    __setPlayersForTest([{ id: 1, name: 'P1', devicePath: 'abc' } as Player]);
     __setGameStateForTest('IDLE');
     __setEarlyBuzzersForTest(new Set());
   });
