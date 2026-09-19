@@ -184,6 +184,7 @@ export const __setPlayersForTest = (p: Player[]) => {
 // Devices
 const DELCOM_VENDOR_ID = 0x0fc5;
 const DELCOM_PRODUCT_ID = 0xb080;
+const DELCOM_STATE_BYTE_INDEX = 3;
 const hidDevices: HID.HID[] = [];
 
 let mainWindow: BrowserWindow | null = null;
@@ -485,8 +486,8 @@ const setupDevice = (d: HID.Device) => {
           console.error('HID Error:', err);
           return;
         }
-        // Byte 3 check (from previous success)
-        const pressed = data.length > 3 && data[3] > 0;
+        // Check the state byte for a button press
+        const pressed = data.length > DELCOM_STATE_BYTE_INDEX && data[DELCOM_STATE_BYTE_INDEX] > 0;
         if (pressed && !lastState && d.path) {
           handleDeviceInput(d.path);
         }
