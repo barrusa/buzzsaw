@@ -185,6 +185,7 @@ export const __setPlayersForTest = (p: Player[]) => {
 const DELCOM_VENDOR_ID = 0x0fc5;
 const DELCOM_PRODUCT_ID = 0xb080;
 const hidDevices: HID.HID[] = [];
+export const __getHidDevicesForTest = () => hidDevices;
 
 let mainWindow: BrowserWindow | null = null;
 let boardWindow: BrowserWindow | null = null;
